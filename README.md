@@ -3,6 +3,6 @@
 ## Team Members:
 * A. Banks
 * L. Chung
-* J. Corsi-Warren
+* J. Corsi
 * M. Warren
 * A. Xardone

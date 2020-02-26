@@ -28,6 +28,8 @@ void setup() {
 
 void loop() {
   while (Serial.available() > 0) {
+    
+    
     inChar = Serial.read();
 
     if (inChar == '#') {
@@ -40,12 +42,13 @@ void loop() {
       }
     }
     if (inChar == '\n') {
+      startTime = millis();
+      startBrightness = currentBrightness;
       timer = partStr[1].toInt();
       delayTimer = partStr[0].toInt();
       endTime = startTime + (delayTimer * 1000) + (timer * 1000);
       gradient = (double)(255 - startBrightness) / (double)(timer * 1000);
-      startTime = millis() + (delayTimer * 1000);
-      startBrightness = currentBrightness;
+      startTime += (delayTimer * 1000);
       Serial.print(delayTimer); Serial.print(" "); Serial.println(timer);
       partStr[0] = "";
       partStr[1] = "";

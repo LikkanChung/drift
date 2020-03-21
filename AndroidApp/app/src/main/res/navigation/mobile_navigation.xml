@@ -18,6 +18,11 @@
         tools:layout="@layout/fragment_dashboard" />
 
     <fragment
+        android:id="@+id/navigation_alarms"
+        android:name="com.example.sleepyapps.ui.alarms.AlarmsFragment"
+        android:label="@string/title_alarms"
+        tools:layout="@layout/fragment_alarms" />
+    <fragment
         android:id="@+id/navigation_notifications"
         android:name="com.example.sleepyapps.ui.notifications.NotificationsFragment"
         android:label="@string/title_notifications"

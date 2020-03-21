@@ -1,6 +1,8 @@
 <resources>
-    <string name="app_name">SleepyApps</string>
+    <string name="app_name">Drift App</string>
     <string name="title_home">Home</string>
     <string name="title_dashboard">Dashboard</string>
     <string name="title_notifications">Notifications</string>
+    <string name="title_alarms">Alarms</string>
+    <string name="alarm_heading">Your alarms</string>
 </resources>

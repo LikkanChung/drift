@@ -1,16 +1,16 @@
-package com.example.sleepyapps.ui.home;
+package com.example.sleepyapps.ui.alarms;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
-public class HomeViewModel extends ViewModel {
+public class AlarmViewModel extends ViewModel {
 
     private MutableLiveData<String> mText;
 
-    public HomeViewModel() {
+    public AlarmViewModel() {
         mText = new MutableLiveData<>();
-        mText.setValue("Hello world");
+        mText.setValue("This is bitch fragment");
     }
 
     public LiveData<String> getText() {

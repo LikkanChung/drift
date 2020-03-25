@@ -2,7 +2,6 @@ package sleepapp.backend;
 
 import com.sun.net.httpserver.HttpServer;
 import sleepapp.backend.endpoint.Endpoint;
-import sleepapp.backend.endpoint.SleepyTestHandler;
 
 import java.io.IOException;
 import java.net.InetAddress;

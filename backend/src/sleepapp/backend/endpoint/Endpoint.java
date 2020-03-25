@@ -25,8 +25,6 @@ public abstract class Endpoint implements HttpHandler {
 
     @Override
     public void handle(HttpExchange ex) throws IOException {
-        Headers respHeaders = ex.getResponseHeaders();
-
         Map<String, String> params = queryToMap(ex.getRequestURI().getQuery());
         long userid = 0;
         String useridString = params.get("userid");
@@ -40,26 +38,31 @@ public abstract class Endpoint implements HttpHandler {
 
         System.out.println("Resolving request for userid " + userid);
 
-        respHeaders.add("Content-Type", "application/json; charset=utf8");
-
         String method = ex.getRequestMethod().toUpperCase();
         boolean response = false;
         try {
             switch (method) {
                 case "GET":
                     response = get(ex, userid, params);
+                    break;
                 case "POST":
                     response = post(ex, userid, params);
+                    break;
                 case "PUT":
                     response = put(ex, userid, params);
+                    break;
                 case "HEAD":
                     response = head(ex, userid, params);
+                    break;
                 case "DELETE":
                     response = delete(ex, userid, params);
+                    break;
                 case "PATCH":
                     response = patch(ex, userid, params);
+                    break;
                 case "OPTIONS":
                     response = options(ex, userid, params);
+                    break;
             }
         } catch (IOException e) {
             System.err.println("IOException in request handler");
@@ -95,7 +98,7 @@ public abstract class Endpoint implements HttpHandler {
     }
 
     protected void writeResponse(HttpExchange ex, String resp, int status) throws IOException {
-        ex.getResponseHeaders().add("Content-Type", "text/html; charset=utf8");
+        ex.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
         byte[] responseBytes = StandardCharsets.UTF_8.encode(resp).array();
         ex.sendResponseHeaders(status, responseBytes.length);
 

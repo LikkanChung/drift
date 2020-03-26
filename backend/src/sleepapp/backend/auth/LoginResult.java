@@ -1,18 +1,41 @@
 package sleepapp.backend.auth;
 
+import java.time.Instant;
+
 public class LoginResult {
     private Status status;
     private String token;
+    private Instant begins;
+    private Instant expires;
 
     protected static LoginResult UNRECOGNISED = new LoginResult(Status.NOT_RECOGNISED, null);
+    protected static LoginResult DB_ERROR_HAPPENED = new LoginResult(Status.DB_ERROR, null);
 
-    protected LoginResult(Status status, String token) {
+    private LoginResult(Status status, String token) {
         this.status = status;
         this.token = token;
+
+        begins = Instant.EPOCH;
+        expires = Instant.EPOCH;
+    }
+
+    protected LoginResult(Status status, String token, Instant begins, Instant expires) {
+        this.status = status;
+        this.token = token;
+        this.begins = begins;
+        this.expires = expires;
     }
 
     public Status getStatus() {
         return status;
+    }
+
+    public Instant begins() {
+        return begins;
+    }
+
+    public Instant expires() {
+        return expires;
     }
 
     public String getToken() {
@@ -21,7 +44,8 @@ public class LoginResult {
 
     public enum Status {
         SUCCESS,
-        NOT_RECOGNISED;
+        NOT_RECOGNISED,
+        DB_ERROR;
 
         public String getReason() {
             switch (this) {

@@ -3,6 +3,7 @@ package sleepapp.backend.endpoint;
 import com.sun.net.httpserver.HttpExchange;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import sleepapp.backend.auth.UserAuth;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.awt.font.NumericShaper;
@@ -40,7 +41,12 @@ public class AlarmsHandler extends Endpoint {
     }
 
     @Override
-    protected boolean get(HttpExchange exchange, long userid, Map<String, String> params) throws IOException, SQLException {
+    public int minimumAccessLevel() {
+        return UserAuth.ACCESS_LEVEL_READ_WRITE;
+    }
+
+    @Override
+    protected boolean get(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
         StringBuilder query = new StringBuilder("\nSELECT aid, time FROM alarms " +
                 "\nWHERE alarms.uid = ? ");
 
@@ -62,7 +68,7 @@ public class AlarmsHandler extends Endpoint {
         }
 
         PreparedStatement stmt = db.prepareStatement(query.toString());
-        stmt.setLong(1, userid);
+        stmt.setLong(1, userAuth.getUserId());
 
         if (max != null)
             stmt.setInt(2, max);
@@ -74,32 +80,33 @@ public class AlarmsHandler extends Endpoint {
     }
 
     @Override
-    protected boolean post(HttpExchange exchange, long userid, Map<String, String> params) throws IOException, SQLException {
+    protected boolean post(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
         return false;
     }
 
     @Override
-    protected boolean put(HttpExchange exchange, long userid, Map<String, String> params) throws IOException, SQLException {
+    protected boolean put(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
         return false;
     }
 
     @Override
-    protected boolean head(HttpExchange exchange, long userid, Map<String, String> params) throws IOException, SQLException {
+    protected boolean head(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
         return false;
     }
 
     @Override
-    protected boolean delete(HttpExchange exchange, long userid, Map<String, String> params) throws IOException, SQLException {
+    protected boolean delete(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
         return false;
     }
 
     @Override
-    protected boolean patch(HttpExchange exchange, long userid, Map<String, String> params) throws IOException, SQLException {
+    protected boolean patch(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
         return false;
     }
 
     @Override
-    protected boolean options(HttpExchange exchange, long userid, Map<String, String> params) throws IOException, SQLException {
+    protected boolean options(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
         return false;
     }
+
 }

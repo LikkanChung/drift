@@ -1,6 +1,7 @@
 package sleepapp.backend;
 
 import com.sun.net.httpserver.HttpServer;
+import sleepapp.backend.auth.UserAuthService;
 import sleepapp.backend.endpoint.Endpoint;
 
 import java.io.IOException;
@@ -22,10 +23,12 @@ public class Server {
 
     private static final InetAddress LISTEN_ADDRESS = InetAddress.getLoopbackAddress();
 
+    private static UserAuthService userAuthService;
 
     public static void main(String[] args) throws IOException {
         Scanner stdin = new Scanner(System.in);
-        Connection dbConn = openPostgresConnection(DB_URL);
+        Connection dbConn = openPostgresConnection(DB_URL, DB_USERNAME, DB_PASSWORD);
+        userAuthService = new UserAuthService(dbConn);
 
         if (dbConn == null) {
             System.out.println("Opening db connection failed - terminating...");
@@ -45,7 +48,7 @@ public class Server {
         System.out.println("Bye then");
     }
 
-    private static Connection openPostgresConnection(String dbUrl) {
+    public static Connection openPostgresConnection(String dbUrl, String dbUsername, String dbPassword) {
         try {
             Class.forName("org.postgresql.Driver");
         } catch (ClassNotFoundException e) {
@@ -54,13 +57,17 @@ public class Server {
         }
 
         try {
-            return DriverManager.getConnection(dbUrl, DB_USERNAME, DB_PASSWORD);
+            return DriverManager.getConnection(dbUrl, dbUsername, dbPassword);
         } catch (SQLException e) {
             System.out.println("Connection to the database failed! Reason: " + e.getMessage());
             System.out.println("Terminating.");
             return null;
         }
 
+    }
+
+    public static UserAuthService getUserAuthService() {
+        return userAuthService;
     }
 
 }

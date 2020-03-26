@@ -18,15 +18,17 @@ CREATE TABLE alarms (
 	uid BIGSERIAL,
 	time TIMESTAMP,
 
-	FOREIGN KEY (uid) REFERENCES users(uid)
+	FOREIGN KEY (uid) REFERENCES users(uid) ON DELETE CASCADE
 );
 
 CREATE TABLE authenticated_clients (
   uid BIGSERIAL,
   token BYTEA,
+  access_level INTEGER,
   expire TIMESTAMP,
 
-  FOREIGN KEY (uid) REFERENCES users(uid),
+  FOREIGN KEY (uid) REFERENCES users(uid) ON DELETE CASCADE,
   CHECK (octet_length(token) = 64),
+  UNIQUE(token),
   CHECK (expire > NOW())
 );

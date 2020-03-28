@@ -4,14 +4,17 @@ import com.sun.net.httpserver.HttpExchange;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import sleepapp.backend.auth.UserAuth;
+import sleepapp.backend.datamap.JsonToDatabaseMapper;
+import sleepapp.backend.datamap.SqlType;
+import sleepapp.backend.datamap.ValidationPolicy;
 
 import javax.net.ssl.HttpsURLConnection;
-import java.awt.font.NumericShaper;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.Map;
 
 public class AlarmsHandler extends Endpoint {
@@ -19,21 +22,32 @@ public class AlarmsHandler extends Endpoint {
     private static final String MY_PATH = "/alarms";
 
     private Connection db;
+    private JsonToDatabaseMapper mapper;
 
     public AlarmsHandler(Connection db) {
         this.db = db;
+        mapper = new JsonToDatabaseMapper(db, "alarms", SqlType.LONG, "aid");
+        mapper.defineReadOnlyLongColumn("aid");
+        mapper.defineWriteableTimestampColumn("time", (Instant val) -> {
+            if (val.isBefore(Instant.now())) {
+                return "Can't edit alarms that have already passed";
+            } else {
+                return ValidationPolicy.OK;
+            }
+        });
     }
 
-    private JSONArray alarmsToJson(ResultSet rs) throws SQLException {
-        JSONArray array = new JSONArray();
-        while (rs.next()) {
-            JSONObject obj = new JSONObject();
-            obj.put("aid", rs.getLong("aid"));
-            obj.put("time", rs.getTimestamp("time").toString());
-            array.put(obj);
-        }
-        return array;
-    }
+//    private JSONArray alarmsToJson(ResultSet rs) throws SQLException {
+//        JSONArray array = new JSONArray();
+//        while (rs.next()) {
+//            JSONObject obj = new JSONObject();
+//            obj.put("aid", rs.getLong("aid"));
+//            obj.put("time", rs.getTimestamp("time").toString());
+//            array.put(obj);
+//        }
+//        return array;
+//    }
+
 
     @Override
     public String getPath() {
@@ -74,7 +88,8 @@ public class AlarmsHandler extends Endpoint {
             stmt.setInt(2, max);
 
         ResultSet rs = stmt.executeQuery();
-        writeResponse(exchange, alarmsToJson(rs).toString(), HttpsURLConnection.HTTP_OK);
+        JSONArray json = mapper.fromResultSet(rs);
+        writeResponse(exchange, json.toString(), HttpsURLConnection.HTTP_OK);
 
         return true;
     }

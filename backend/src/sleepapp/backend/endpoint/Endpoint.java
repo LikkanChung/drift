@@ -9,6 +9,7 @@ import sleepapp.backend.auth.UserAuth;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -126,7 +127,7 @@ public abstract class Endpoint implements HttpHandler {
 
     protected void writeResponse(HttpExchange ex, String resp, int status) throws IOException {
         ex.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
-        byte[] responseBytes = StandardCharsets.UTF_8.encode(resp).array();
+        byte[] responseBytes = resp.getBytes(StandardCharsets.UTF_8);
         ex.sendResponseHeaders(status, responseBytes.length);
 
         ex.getResponseBody().write(responseBytes);

@@ -1,6 +1,5 @@
 package sleepapp.backend.datamap;
 
-import jdk.jshell.spi.ExecutionControl;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -34,6 +33,7 @@ public class JsonToDatabaseMapper {
         }
     }
 
+
     private Connection db;
     private String tableName;
     private SqlType primaryKeyType;
@@ -42,6 +42,7 @@ public class JsonToDatabaseMapper {
     private String authKeyColumn;
     private HashMap<String, WritableColumn> wColumns = new HashMap<>();
     private HashMap<String, SqlType> rColumns = new HashMap<>();
+    private HashMap<String, SqlType> fkColumns = new HashMap<>();
 
     private Flag flag = Flag.OK;
     private String validationResult;
@@ -53,7 +54,10 @@ public class JsonToDatabaseMapper {
         INTERNAL_ERROR,
         VALUE_PARSE_FAILED,
         INT_OVERFLOW,
-        VALIDATION_POLICY;
+        VALIDATION_POLICY,
+        UNKNOWN_JSON_KEY,
+        JSON_VALUE_EXPECTED,
+        TOO_MUCH_JSON;
 
         public boolean bad() {
             return (this != OK);
@@ -77,12 +81,37 @@ public class JsonToDatabaseMapper {
         return flag;
     }
 
-    public String getValidationResult() {
+    public String getValidationError() {
         return validationResult;
     }
 
     public String getErrorColumn() {
         return errorColumn;
+    }
+
+    public String explainError() {
+        switch (flag) {
+            case OK:
+                return "Success";
+            case RECORD_NOT_FOUND:
+                return "Specified record not found, or not accessible to this user";
+            case INTERNAL_ERROR:
+                return "Internal server error";
+            case VALUE_PARSE_FAILED:
+                return "Could not parse the value for member '" + errorColumn + "' Check that it is the correct type";
+            case INT_OVERFLOW:
+                return "Integer value for key '" + errorColumn + "' too large";
+            case VALIDATION_POLICY:
+                return "Validation failed for key '" + errorColumn + "': " + validationResult;
+            case UNKNOWN_JSON_KEY:
+                return "Unrecognised key: '" + errorColumn + "'";
+            case JSON_VALUE_EXPECTED:
+                return "Expected a value for key '" + errorColumn + "' - value not found or couldn't be converted";
+            case TOO_MUCH_JSON:
+                return "Request complexity / length limits exceeded";
+            default:
+                return "Unknown error";
+        }
     }
 
     public JSONObject fetch(Object primaryKeyValue) {
@@ -133,14 +162,14 @@ public class JsonToDatabaseMapper {
                 String name = e.getKey();
                 WritableColumn col = e.getValue();
                 Object val = fetch(rs, name, col.type);
-                json.put(name, val.toString());
+                json.put(name, val);
             }
 
             for (Map.Entry<String, SqlType> e : rColumns.entrySet()) {
                 String name = e.getKey();
                 SqlType type = e.getValue();
                 Object val = fetch(rs, name, type);
-                json.put(name, val.toString());
+                json.put(name, val);
             }
 
         } catch (SQLException e) {
@@ -173,50 +202,129 @@ public class JsonToDatabaseMapper {
         }
     }
 
-    public Flag push(JSONObject json) {
-        return push(json, null);
+    public Flag create(JSONObject json) {
+        return create(json, null);
     }
 
-    public Flag push(JSONObject json, Object authKeyVal) {
+    public Flag create(JSONObject json, Object authKeyVal) {
+        matchingOrThrowIllegalArg(authKeyVal, authKeyType);
+
+        json.remove(primaryKeyColumn);
+        json.remove(authKeyColumn);
+
+        StringBuilder query = new StringBuilder();
+        query.append("INSERT INTO ");
+        query.append(tableName);
+        query.append(" (");
+        query.append(authKeyColumn);
+        query.append(", ");
+
+        ArrayList<ColumnEdit> members = new ArrayList<>(json.length());
+
+        for (Map.Entry<String, WritableColumn> e: wColumns.entrySet()) {
+            String colName = e.getKey();
+            WritableColumn col = e.getValue();
+            Optional<Object> optVal = coerceJsonMember(json, colName, col.type);
+            if (optVal.isEmpty())
+                return setErrorState(Flag.JSON_VALUE_EXPECTED, null, colName);
+
+            Object val = optVal.get();
+            String complaint = validate(val, col.validationPolicy, col.type);
+            if (complaint != null)
+                return setErrorState(flag, complaint, colName);
+
+            members.add(new ColumnEdit(colName, col, val));
+            query.append(colName);
+            query.append(", ");
+            json.remove(colName);
+        }
+
+        for (Map.Entry<String, SqlType> e: fkColumns.entrySet()) {
+            String colName = e.getKey();
+            SqlType colType = e.getValue();
+            Optional<Object> optVal = coerceJsonMember(json, colName, colType);
+            if (optVal.isEmpty())
+                return setErrorState(Flag.JSON_VALUE_EXPECTED, null, colName);
+
+            Object val = optVal.get();
+            members.add(new ColumnEdit(colName, new WritableColumn(colType, ValidationPolicy.acceptAll()), val));
+            query.append(colName);
+            query.append(", ");
+            json.remove(colName);
+        }
+
+        if (json.length() > 0)
+            return setErrorState(Flag.UNKNOWN_JSON_KEY, null, json.keySet().iterator().next());
+
+        query.delete(query.length() - 2, query.length()); //remove ", "
+        query.append(") VALUES (?, ");
+        for (int i = 0; i < members.size(); i++)
+            query.append("?, ");
+
+        query.delete(query.length() - 2, query.length()); //remove ", "
+        query.append(")");
+
+        int result = 0;
+        try {
+            PreparedStatement stmt = db.prepareStatement(query.toString());
+            set(stmt, 1, authKeyType, authKeyVal);
+            for (int i = 0; i < members.size(); i++)
+                set(stmt, i + 2, members.get(i).col.type, members.get(i).newVal);
+
+            result = stmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return setErrorState(Flag.INTERNAL_ERROR, null, null);
+        }
+
+        if (result < 1)
+            return setErrorState(Flag.INTERNAL_ERROR, null, null);
+
+        return setErrorState(Flag.OK, null, null);
+    }
+
+    public Flag patch(JSONObject json) {
+        return patch(json, null);
+    }
+
+    public Flag patch(JSONObject json, Object authKeyVal) {
         ArrayList<ColumnEdit> edits = new ArrayList<>(json.length());
 
-        Optional<Object> primaryKeyOpt = coerce(json, primaryKeyColumn, primaryKeyType);
+        Optional<Object> primaryKeyOpt = coerceJsonMember(json, primaryKeyColumn, primaryKeyType);
         if (primaryKeyOpt.isEmpty())
             return flag;
 
         Object primaryKeyVal = primaryKeyOpt.get();
+        json.remove(primaryKeyColumn);
 
         for (Iterator<String> it = json.keys(); it.hasNext(); ) {
             String key = it.next();
             WritableColumn col = wColumns.get(key);
             if (col != null) {
-                Optional<Object> converted = coerce(json, key, col.type);
+                Optional<Object> converted = coerceJsonMember(json, key, col.type);
                 if (converted.isEmpty())
                     return flag;
 
                 edits.add(new ColumnEdit(key, col, converted.get()));
+            } else {
+                return setErrorState(Flag.UNKNOWN_JSON_KEY, null, key);
             }
         }
 
         StringBuilder query = new StringBuilder();
-        query.append("UPDATE");
+        query.append("UPDATE ");
         query.append(tableName);
         query.append("\n");
         query.append("SET ");
 
         for (ColumnEdit edit : edits) {
-            Optional<Object> newValOpt = coerce(json, edit.colName, edit.col.type);
-            if (newValOpt.isEmpty())
-                return flag;
-
-            Object newVal = newValOpt.get();
-            String complaint = validate(newVal, edit.col.validationPolicy, edit.col.type);
+            String complaint = validate(edit.newVal, edit.col.validationPolicy, edit.col.type);
             if (complaint != VALIDATION_OK) {
                 return setErrorState(Flag.VALIDATION_POLICY, complaint, edit.colName);
             }
 
             query.append(edit.colName);
-            query.append(" = ? ,\n");
+            query.append(" = ?,\n");
         }
 
         query.delete(query.length() - 2, query.length()); //Remove "\n", ","
@@ -243,13 +351,16 @@ public class JsonToDatabaseMapper {
         int result = 0;
         try {
             PreparedStatement stmt = db.prepareStatement(query.toString());
+
             {
                 int i = 0;
                 for (; i < edits.size(); i++)
                     set(stmt, i + 1, edits.get(i).col.type, edits.get(i).newVal);
 
+                set(stmt, i + 1, primaryKeyType, primaryKeyVal);
+
                 if (authKeyVal != null)
-                    set(stmt, i + 1, authKeyType, authKeyVal);
+                    set(stmt, i + 2, authKeyType, authKeyVal);
             }
 
             result = stmt.executeUpdate();
@@ -260,6 +371,64 @@ public class JsonToDatabaseMapper {
 
         if (result < 1)
             return setErrorState(Flag.RECORD_NOT_FOUND, null, null);
+
+        return setErrorState(Flag.OK, null, null);
+    }
+
+    public Flag delete(JSONObject idSpecifier) {
+        return delete(idSpecifier, null);
+    }
+
+    public Flag delete(JSONObject idSpecifier, Object authKeyVal) {
+        Optional<Object> primaryKeyValOpt = coerceJsonMember(idSpecifier, primaryKeyColumn, primaryKeyType);
+        if (primaryKeyValOpt.isEmpty())
+            return flag;
+
+        return delete(primaryKeyValOpt.get(), authKeyVal);
+    }
+
+    public Flag delete(Object primaryKeyVal) {
+        return delete(primaryKeyVal, null);
+    }
+
+    public Flag delete(Object primaryKeyVal, Object authKeyVal) {
+        matchingOrThrowIllegalArg(primaryKeyVal, primaryKeyType);
+
+        StringBuilder query = new StringBuilder();
+        query.append("DELETE FROM ");
+        query.append(tableName);
+        query.append(" WHERE ");
+        query.append(primaryKeyColumn);
+        query.append(" = ?");
+        if (authKeyVal != null) {
+            if (authKeyColumn != null) {
+                if (authKeyType.checkJavaType(authKeyVal)) {
+                    query.append(" AND ");
+                    query.append(authKeyColumn);
+                    query.append(" = ?");
+                } else {
+                    throw new IllegalArgumentException("Unexpected auth key type: expected " +
+                            primaryKeyType.getJavaType() + ", got " + authKeyVal.getClass());
+                }
+            } else {
+                throw new UnsupportedOperationException(
+                        "Auth key value supplied, but no auth key column has been defined");
+            }
+        }
+
+        try {
+            PreparedStatement stmt = db.prepareStatement(query.toString());
+            set(stmt, 1, primaryKeyType, primaryKeyVal);
+            if (authKeyVal != null)
+                set(stmt, 2, authKeyType, authKeyVal);
+
+            if (stmt.executeUpdate() < 1) {
+                return setErrorState(Flag.RECORD_NOT_FOUND, null, null);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return setErrorState(Flag.INTERNAL_ERROR, null, null);
+        }
 
         return setErrorState(Flag.OK, null, null);
     }
@@ -281,7 +450,7 @@ public class JsonToDatabaseMapper {
         }
     }
 
-    private Optional<Object> coerce(JSONObject json, String key, SqlType type) {
+    private Optional<Object> coerceJsonMember(JSONObject json, String key, SqlType type) {
         switch (type) {
             case INTEGER:
                 Number intAsNumber = json.optNumber(key);
@@ -329,39 +498,6 @@ public class JsonToDatabaseMapper {
         }
     }
 
-    private <T> Optional<T> convert(Class<T> clazz, String value, SqlType type) {
-        Object out;
-        switch (type) {
-            case INTEGER:
-                try {
-                    out = Integer.valueOf(value);
-                } catch (NumberFormatException e) {
-                    return Optional.empty();
-                }
-                break;
-            case LONG:
-                try {
-                    out = Long.valueOf(value);
-                } catch (NumberFormatException e) {
-                    return Optional.empty();
-                }
-                break;
-            case STRING:
-                out = value;
-                break;
-            case TIMESTAMP:
-                try {
-                    out = Instant.parse(value);
-                } catch (Exception e) {
-                    return Optional.empty();
-                }
-                break;
-            default:
-                throw new RuntimeException("Umm what");
-        }
-        return Optional.of(clazz.cast(out));
-    }
-
     private void set(PreparedStatement stmt, int index, SqlType type, Object value) throws SQLException {
         matchingOrThrowIllegalArg(value, type);
 
@@ -381,6 +517,7 @@ public class JsonToDatabaseMapper {
             case TIMESTAMP:
                 Instant instant = (Instant) value;
                 stmt.setTimestamp(index, Timestamp.from(instant));
+                break;
             default:
                 throw new RuntimeException("umm what");
         }
@@ -410,6 +547,10 @@ public class JsonToDatabaseMapper {
     public void setAuthKey(String columnName, SqlType type) {
         authKeyColumn = columnName;
         authKeyType = type;
+    }
+
+    public void defineForeignKeyColumn(String columnName, SqlType type) {
+        fkColumns.put(columnName, type);
     }
 
     public void defineWriteableIntegerColumn(String columnName, ValidationPolicy<Integer> vp) {

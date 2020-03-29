@@ -33,9 +33,7 @@ public class LoginHandler extends Endpoint {
 
     @Override
     protected boolean post(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
-        ByteBuffer requestData = ByteBuffer.wrap(exchange.getRequestBody().readAllBytes());
-        String requestString = StandardCharsets.UTF_8.decode(requestData).toString();
-        JSONObject json = new JSONObject(requestString);
+        JSONObject json = getBodyAsJson(exchange);
         String username = json.optString("username", null);
         String password = json.optString("password", null);
         String accessLevelString = json.optString("access_level", null);

@@ -1,11 +1,12 @@
 package sleepapp.backend.endpoint;
 
-import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.json.JSONException;
+import org.json.JSONObject;
 import sleepapp.backend.Server;
 import sleepapp.backend.auth.UserAuth;
+import sleepapp.backend.datamap.JsonToDatabaseMapper;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.io.IOException;
@@ -101,6 +102,12 @@ public abstract class Endpoint implements HttpHandler {
             ex.sendResponseHeaders(HttpsURLConnection.HTTP_INTERNAL_ERROR, 0);
             ex.close();
             return;
+        } catch (RuntimeException e) {
+            System.err.println("RuntimeException in request handler");
+            e.printStackTrace();
+            ex.sendResponseHeaders(HttpsURLConnection.HTTP_INTERNAL_ERROR, 0);
+            ex.close();
+            return;
         }
 
         if (!response)
@@ -124,6 +131,44 @@ public abstract class Endpoint implements HttpHandler {
         return result;
     }
 
+    protected boolean defaultPatch(HttpExchange ex, JsonToDatabaseMapper jsonMapper, UserAuth userAuth) throws IOException {
+        JSONObject json = getBodyAsJson(ex);
+        JsonToDatabaseMapper.Flag result = jsonMapper.patch(json, userAuth.getUserId());
+        defaultRespond(ex, jsonMapper, result);
+        return true;
+    }
+
+    protected boolean defaultDelete(HttpExchange ex, JsonToDatabaseMapper jsonMapper, UserAuth userAuth) throws IOException {
+        JSONObject json = getBodyAsJson(ex);
+        JsonToDatabaseMapper.Flag result = jsonMapper.delete(json, userAuth.getUserId());
+        defaultRespond(ex, jsonMapper, result);
+        return true;
+    }
+
+    protected boolean defaultPost(HttpExchange ex, JsonToDatabaseMapper jsonMapper, UserAuth userAuth) throws IOException {
+        JSONObject json = getBodyAsJson(ex);
+        JsonToDatabaseMapper.Flag result = jsonMapper.create(json, userAuth.getUserId());
+        defaultRespond(ex, jsonMapper, result);
+        return true;
+    }
+
+    private void defaultRespond(HttpExchange ex, JsonToDatabaseMapper jsonMapper, JsonToDatabaseMapper.Flag result) throws IOException {
+        if (result != JsonToDatabaseMapper.Flag.OK) {
+            if (result == JsonToDatabaseMapper.Flag.INTERNAL_ERROR) {
+                writeResponse(ex, jsonMapper.explainError(), HttpsURLConnection.HTTP_INTERNAL_ERROR);
+            } else {
+                writeResponse(ex, jsonMapper.explainError(), HttpsURLConnection.HTTP_BAD_REQUEST);
+            }
+        } else {
+            writeResponse(ex, "Ok", HttpsURLConnection.HTTP_ACCEPTED);
+        }
+    }
+
+    protected JSONObject getBodyAsJson(HttpExchange ex) throws IOException {
+        ByteBuffer requestData = ByteBuffer.wrap(ex.getRequestBody().readAllBytes());
+        String requestString = StandardCharsets.UTF_8.decode(requestData).toString();
+        return new JSONObject(requestString);
+    }
 
     protected void writeResponse(HttpExchange ex, String resp, int status) throws IOException {
         ex.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");

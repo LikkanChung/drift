@@ -16,6 +16,7 @@ public class UserAuthService {
     private static final String TOKEN_HEADER = "X-Auth-Token";
     private static final int TOKEN_LENGTH_BYTES = 64;
     public static final int TOKEN_LENGTH_STRING = 88;
+    public static final long LOGIN_RATE_LIMIT_WAIT_MILLIS = 250;
 
     Connection db;
     SecureRandom rand;
@@ -37,6 +38,13 @@ public class UserAuthService {
     public LoginResult logIn(String username, String password, int accessLevel) {
         if (!UserAuth.validAccessLevel(accessLevel))
             throw new IllegalArgumentException("Invalid accessLevel");
+
+        try {
+            Thread.sleep(LOGIN_RATE_LIMIT_WAIT_MILLIS);
+        } catch (InterruptedException e) {
+            System.out.println("Sleeping interrupted!");
+            Thread.currentThread().interrupt();
+        }
 
         try {
             String dbPassword;

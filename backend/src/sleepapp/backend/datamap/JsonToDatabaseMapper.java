@@ -209,6 +209,9 @@ public class JsonToDatabaseMapper {
     public Flag create(JSONObject json, Object authKeyVal) {
         matchingOrThrowIllegalArg(authKeyVal, authKeyType);
 
+        if (isTooMuchJson(json))
+            return flag;
+
         json.remove(primaryKeyColumn);
         json.remove(authKeyColumn);
 
@@ -288,6 +291,9 @@ public class JsonToDatabaseMapper {
     }
 
     public Flag patch(JSONObject json, Object authKeyVal) {
+        if (isTooMuchJson(json))
+            return flag;
+
         ArrayList<ColumnEdit> edits = new ArrayList<>(json.length());
 
         Optional<Object> primaryKeyOpt = coerceJsonMember(json, primaryKeyColumn, primaryKeyType);
@@ -542,6 +548,15 @@ public class JsonToDatabaseMapper {
         if (!type.checkJavaType(obj))
             throw new IllegalArgumentException("Bad primary key type: expected " + type.getJavaType()
                     + " , got " + obj.getClass());
+    }
+
+    public boolean isTooMuchJson(JSONObject json) {
+        if (json.length() > 30) {
+            flag = Flag.TOO_MUCH_JSON;
+            return true;
+        }
+
+        return false;
     }
 
     public void setAuthKey(String columnName, SqlType type) {

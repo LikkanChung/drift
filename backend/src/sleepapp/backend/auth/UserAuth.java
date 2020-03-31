@@ -27,9 +27,9 @@ public class UserAuth {
             case ACCESS_LEVEL_NONE:
                 return Duration.ZERO;
             case ACCESS_LEVEL_ACCOUNT:
-                return Duration.ofHours(1);
+                return Duration.ofMinutes(10); //Non-debug value: Duration.ofHours(1)
             case ACCESS_LEVEL_READ_WRITE:
-                return Duration.ofDays(60);
+                return Duration.ofHours(1); //Non-debug value: Duration.ofDays(60)
             default:
                 throw new IllegalArgumentException("Invalid access level");
         }

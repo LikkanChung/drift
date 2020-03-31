@@ -7,6 +7,7 @@ import sleepapp.backend.endpoint.Endpoint;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -21,8 +22,6 @@ public class Server {
     private static final String DB_USERNAME = "jack";
     private static final String DB_PASSWORD = "21ysxqkcl1i3c3h8ou7l"; //TODO I'm uncomfortable
 
-    private static final InetAddress LISTEN_ADDRESS = InetAddress.getLoopbackAddress();
-
     private static UserAuthService userAuthService;
 
     public static void main(String[] args) throws IOException {
@@ -35,7 +34,7 @@ public class Server {
             return;
         }
 
-        HttpServer server = HttpServer.create(new InetSocketAddress(LISTEN_ADDRESS, PORT), BACKLOG);
+        HttpServer server = HttpServer.create(new InetSocketAddress(PORT), BACKLOG);
 
         for (Endpoint e: Endpoint.initialiseAll(dbConn)) {
             server.createContext(e.getPath(), e);

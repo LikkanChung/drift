@@ -36,6 +36,14 @@ public class UserAuthService {
     }
 
     public LoginResult logIn(String username, String password, int accessLevel) {
+        return logIn(username, null, password, accessLevel);
+    }
+
+    public LoginResult logIn(long uid, String password, int accessLevel) {
+        return logIn(null, uid, password, accessLevel);
+    }
+
+    private LoginResult logIn(String username, Long uid, String password, int accessLevel) {
         if (!UserAuth.validAccessLevel(accessLevel))
             throw new IllegalArgumentException("Invalid accessLevel");
 
@@ -47,13 +55,22 @@ public class UserAuthService {
         }
 
         try {
-            String dbPassword;
+            String dbPassword; long obtainedUid;
             {
-                PreparedStatement stmt = db.prepareStatement(
-                        "SELECT (password) FROM users WHERE username = ?"
-                );
-                stmt.setString(1, username);
-                ResultSet rs = stmt.executeQuery();
+                ResultSet rs;
+                if (uid != null) {
+                    PreparedStatement stmt = db.prepareStatement(
+                            "SELECT uid, password FROM users WHERE uid = ?"
+                    );
+                    stmt.setLong(1, uid);
+                    rs = stmt.executeQuery();
+                } else {
+                    PreparedStatement stmt = db.prepareStatement(
+                            "SELECT uid, password FROM users WHERE username = ?"
+                    );
+                    stmt.setString(1, username);
+                    rs = stmt.executeQuery();
+                }
 
                 if (!rs.next()) {
                     return LoginResult.UNRECOGNISED;
@@ -65,6 +82,8 @@ public class UserAuthService {
                 if (!dbPasswordDecoded.equals(password)) {
                     return LoginResult.UNRECOGNISED;
                 }
+
+                obtainedUid = rs.getLong("uid");
             }
 
             rand.nextBytes(tokenBuffer);
@@ -75,31 +94,20 @@ public class UserAuthService {
             PreparedStatement putStmt = db.prepareStatement(
                     "INSERT INTO authenticated_clients(uid, token, access_level, expire)" +
                             "VALUES (" +
-                            "(SELECT (uid) FROM users WHERE username = ? AND password = ?), " +
+                            "(SELECT (uid) FROM users WHERE uid = ?), " +
                             "(?), " +
                             "(?), " +
                             "(?)" +
                             ")"
             );
-            putStmt.setString(1, username);
-            putStmt.setString(2, password);
-            putStmt.setBytes(3, tokenBuffer);
-            putStmt.setInt(4, accessLevel);
-            putStmt.setTimestamp(5, Timestamp.from(expiryTime));
+            putStmt.setLong(1, obtainedUid);
+            putStmt.setBytes(2, tokenBuffer);
+            putStmt.setInt(3, accessLevel);
+            putStmt.setTimestamp(4, Timestamp.from(expiryTime));
 
             int success = putStmt.executeUpdate();
             if (success > 0) {
-                PreparedStatement uidStmt = db.prepareStatement(
-                        "SELECT uid FROM authenticated_clients WHERE token = ?");
-                uidStmt.setBytes(1, tokenBuffer);
-                ResultSet rs = uidStmt.executeQuery();
-
-                if (!rs.next())
-                    return LoginResult.DB_ERROR_HAPPENED;
-
-                long uid = rs.getLong("uid");
-
-                return new LoginResult(LoginResult.Status.SUCCESS, uid, token, now, expiryTime);
+                return new LoginResult(LoginResult.Status.SUCCESS, obtainedUid, token, now, expiryTime);
             } else {
                 System.err.println("Add authenticated client update failed");
                 return LoginResult.DB_ERROR_HAPPENED;

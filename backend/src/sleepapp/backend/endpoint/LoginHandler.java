@@ -5,6 +5,7 @@ import org.json.JSONObject;
 import sleepapp.backend.Server;
 import sleepapp.backend.auth.LoginResult;
 import sleepapp.backend.auth.UserAuth;
+import sleepapp.backend.auth.UserAuthService;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.io.DataInputStream;
@@ -34,12 +35,13 @@ public class LoginHandler extends Endpoint {
     @Override
     protected boolean post(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
         JSONObject json = getBodyAsJson(exchange);
+        long uid = json.optLong("uid", -1);
         String username = json.optString("username", null);
         String password = json.optString("password", null);
         String accessLevelString = json.optString("access_level", null);
 
-        if (username == null || password == null) {
-            writeResponse(exchange, "Username or password missing", HttpsURLConnection.HTTP_BAD_REQUEST);
+        if (password == null) {
+            writeResponse(exchange, "No password given", HttpsURLConnection.HTTP_BAD_REQUEST);
             return true;
         }
 
@@ -57,7 +59,19 @@ public class LoginHandler extends Endpoint {
             }
         }
 
-        LoginResult result = Server.getUserAuthService().logIn(username, password, accessLevel);
+        UserAuthService auth = Server.getUserAuthService();
+        LoginResult result;
+        if (uid < 1) {
+            if (username == null) {
+                writeResponse(exchange, "No username or uid specified", HttpsURLConnection.HTTP_BAD_REQUEST);
+                return true;
+            }
+
+            result = auth.logIn(username, password, accessLevel);
+        } else {
+            result = auth.logIn(uid, password, accessLevel);
+        }
+
         switch (result.getStatus()) {
             case SUCCESS:
                 JSONObject response = new JSONObject();

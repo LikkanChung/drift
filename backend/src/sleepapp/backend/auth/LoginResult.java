@@ -56,7 +56,7 @@ public class LoginResult {
                 case SUCCESS:
                     return "Success";
                 case NOT_RECOGNISED:
-                    return "Username and password combination not recognised";
+                    return "Username/uid and password combination not recognised";
                 default:
                     return "Unknown Error";
             }

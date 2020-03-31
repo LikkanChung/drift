@@ -61,6 +61,7 @@ public class LoginHandler extends Endpoint {
         switch (result.getStatus()) {
             case SUCCESS:
                 JSONObject response = new JSONObject();
+                response.put("uid", result.getUid());
                 response.put("token", result.getToken());
                 response.put("begins", result.begins());
                 response.put("expires", result.expires());

@@ -72,7 +72,7 @@ public class UserAuthService {
             Instant now = Instant.now();
             Instant expiryTime = now.plus(UserAuth.defaultValidityPeriod(accessLevel));
 
-            PreparedStatement stmt = db.prepareStatement(
+            PreparedStatement putStmt = db.prepareStatement(
                     "INSERT INTO authenticated_clients(uid, token, access_level, expire)" +
                             "VALUES (" +
                             "(SELECT (uid) FROM users WHERE username = ? AND password = ?), " +
@@ -81,15 +81,25 @@ public class UserAuthService {
                             "(?)" +
                             ")"
             );
-            stmt.setString(1, username);
-            stmt.setString(2, password);
-            stmt.setBytes(3, tokenBuffer);
-            stmt.setInt(4, accessLevel);
-            stmt.setTimestamp(5, Timestamp.from(expiryTime));
+            putStmt.setString(1, username);
+            putStmt.setString(2, password);
+            putStmt.setBytes(3, tokenBuffer);
+            putStmt.setInt(4, accessLevel);
+            putStmt.setTimestamp(5, Timestamp.from(expiryTime));
 
-            int success = stmt.executeUpdate();
+            int success = putStmt.executeUpdate();
             if (success > 0) {
-                return new LoginResult(LoginResult.Status.SUCCESS, token, now, expiryTime);
+                PreparedStatement uidStmt = db.prepareStatement(
+                        "SELECT uid FROM authenticated_clients WHERE token = ?");
+                uidStmt.setBytes(1, tokenBuffer);
+                ResultSet rs = uidStmt.executeQuery();
+
+                if (!rs.next())
+                    return LoginResult.DB_ERROR_HAPPENED;
+
+                long uid = rs.getLong("uid");
+
+                return new LoginResult(LoginResult.Status.SUCCESS, uid, token, now, expiryTime);
             } else {
                 System.err.println("Add authenticated client update failed");
                 return LoginResult.DB_ERROR_HAPPENED;

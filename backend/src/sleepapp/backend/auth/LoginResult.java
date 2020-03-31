@@ -5,6 +5,7 @@ import java.time.Instant;
 public class LoginResult {
     private Status status;
     private String token;
+    private Long uid;
     private Instant begins;
     private Instant expires;
 
@@ -19,9 +20,10 @@ public class LoginResult {
         expires = Instant.EPOCH;
     }
 
-    protected LoginResult(Status status, String token, Instant begins, Instant expires) {
+    protected LoginResult(Status status, long uid, String token, Instant begins, Instant expires) {
         this.status = status;
         this.token = token;
+        this.uid = uid;
         this.begins = begins;
         this.expires = expires;
     }
@@ -41,6 +43,8 @@ public class LoginResult {
     public String getToken() {
         return token;
     }
+
+    public Long getUid() { return uid; }
 
     public enum Status {
         SUCCESS,

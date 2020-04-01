@@ -2,7 +2,9 @@
 // custom protocol "#[delay];[glow-time];\n"
 // using a custom protocol read the number of seconds <int> left to full brighness, from current, if -1 then off, if 0 then now
 
-const int led = 5;
+const int led[] = {3,5,6}; // use pwm pins
+
+const int color[] = {1,1,1}; // white - not normalised
 
 long delayTimer = 0;
 
@@ -20,7 +22,7 @@ int part = 0;
 
 void setup() {
   // put your setup code here, to run once:
-  for (int i = 0; i < 3; i++) {
+  for (int i = 2; i <= 4; i++) {
     pinMode(i, OUTPUT);
   }
   Serial.begin(9600);
@@ -70,7 +72,11 @@ void loop() {
       currentBrightness = max(currentBrightness, 0);
     }
   }
+
+  int i = 0;
+  for (i=0; i < 3; i++) {
+    analogWrite(led[i], currentBrightness * color[i]);
+  }
   
-  analogWrite(led, currentBrightness);
 
 }

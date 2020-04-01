@@ -19,20 +19,13 @@ public class UserAuthService {
     public static final long LOGIN_RATE_LIMIT_WAIT_MILLIS = 250;
 
     Connection db;
-    SecureRandom rand;
+    SecureRandom rand = new SecureRandom();
     Base64.Encoder base64Encoder = Base64.getEncoder();
     Base64.Decoder base64Decoder = Base64.getDecoder();
     byte[] tokenBuffer = new byte[TOKEN_LENGTH_BYTES];
 
     public UserAuthService(Connection db) {
         this.db = db;
-
-        try {
-            rand = SecureRandom.getInstanceStrong();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-            throw new RuntimeException("SecureRandom.getInstanceStrong() failed");
-        }
     }
 
     public LoginResult logIn(String username, String password, int accessLevel) {
@@ -87,6 +80,7 @@ public class UserAuthService {
             }
 
             rand.nextBytes(tokenBuffer);
+
             String token = base64Encoder.encodeToString(tokenBuffer);
             Instant now = Instant.now();
             Instant expiryTime = now.plus(UserAuth.defaultValidityPeriod(accessLevel));

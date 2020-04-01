@@ -3,7 +3,7 @@
     <!ENTITY appname "Drift">
     <!ENTITY help_url_prefix "https://jackcorsi.dev/sleepy">
     <!ENTITY help_url_explain_relog "/explainrelog.php">
-    <!ENTITY api_url_prefix "192.168.0.103:3333">
+    <!ENTITY api_url_prefix "http://192.168.0.103:3333">
     ]>
 
 <resources>

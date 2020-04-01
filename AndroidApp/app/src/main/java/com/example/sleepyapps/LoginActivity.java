@@ -22,28 +22,36 @@ import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.StandardConstants;
 
 public class LoginActivity extends AppCompatActivity {
 
     private static final RetryPolicy RETRY_POLICY =
-            new DefaultRetryPolicy(1500, 3, 1);
+            new DefaultRetryPolicy(1500, 0, 1);
     private static final String LOG_TAG = "LoginActivity";
 
     private SharedPreferences spref;
     private boolean higherPermissions = false; //TODO
     private RequestQueue rq;
+    private TextView usernameView;
+    private TextView passwordView;
     private Button butt;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
+        usernameView = findViewById(R.id.text_username);
+        passwordView = findViewById(R.id.text_password);
 
         spref = getSharedPreferences(getString(R.string.spref_file_name), Context.MODE_PRIVATE);
         long uid = spref.getLong(getString(R.string.spref_uid), -1);
@@ -59,6 +67,7 @@ public class LoginActivity extends AppCompatActivity {
 
             if (startTime.plus(leaseTime.dividedBy(2)).isAfter(Instant.now())) {
                 MainActivity.launch(this); //Not halfway through lease yet
+                finish();
                 return;
             }
 
@@ -66,7 +75,7 @@ public class LoginActivity extends AppCompatActivity {
             String username = spref.getString(
                     getString(R.string.spref_cache_username), null);
             if (username != null)
-                ((TextView) findViewById(R.id.text_username)).setText(username);
+                usernameView.setText(username);
 
             TextView explanation = findViewById(R.id.text_relog_explanation);
             explanation.setMovementMethod(LinkMovementMethod.getInstance());
@@ -80,11 +89,30 @@ public class LoginActivity extends AppCompatActivity {
         butt.setOnClickListener((View view) -> {
             butt.setEnabled(false);
             JsonObjectRequest request = new JsonObjectRequest(
-                    Request.Method.GET, getString(R.string.api_url_login),
+                    Request.Method.POST, getString(R.string.api_url_login),
                     null,
                     onSuccess,
                     onFailure
-            );
+            ) {
+                @Override
+                public String getBodyContentType() {
+                    return "application/json; charset=utf-8";
+                }
+
+                @Override
+                public byte[] getBody() {
+                    JSONObject json = new JSONObject();
+                    try {
+                        json.put("username", usernameView.getText());
+                        json.put("password", passwordView.getText());
+                    } catch (JSONException e) {
+                        throw new RuntimeException("JSONException when json-ing the request", e);
+                    }
+                    return json.toString().getBytes(StandardCharsets.UTF_8);
+                }
+
+            };
+
             request.setRetryPolicy(RETRY_POLICY);
             rq.add(request);
         });
@@ -96,7 +124,7 @@ public class LoginActivity extends AppCompatActivity {
         long uid = obj.optLong("uid", -1);
         String token = obj.optString("token", null);
 
-        if (begins == null || expires == null || uid > 0 || token == null) {
+        if (begins == null || expires == null || uid < 0 || token == null) {
             butt.setEnabled(true);
             Log.e(LOG_TAG, "Missing fields in api response!");
             return;
@@ -110,6 +138,7 @@ public class LoginActivity extends AppCompatActivity {
         editor.commit();
 
         MainActivity.launch(this);
+        finish();
     };
 
     private final Response.ErrorListener onFailure = (VolleyError error) -> {
@@ -117,8 +146,10 @@ public class LoginActivity extends AppCompatActivity {
         TextView explanation = findViewById(R.id.text_error_explanation);
 
         NetworkResponse response = error.networkResponse;
+
         if (response == null) {
             explanation.setText(getString(R.string.login_no_response_explanation));
+            Log.d(LOG_TAG, "Request failed: " + error.getMessage());
         } else {
             switch (response.statusCode) {
                 case HttpsURLConnection.HTTP_UNAUTHORIZED:

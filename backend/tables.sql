@@ -25,7 +25,7 @@ CREATE TABLE authenticated_clients (
   uid BIGSERIAL,
   token BYTEA,
   access_level INTEGER,
-  expire TIMESTAMP,
+  expire TIMESTAMP WITH TIME ZONE,
 
   FOREIGN KEY (uid) REFERENCES users(uid) ON DELETE CASCADE,
   CHECK (octet_length(token) = 64),

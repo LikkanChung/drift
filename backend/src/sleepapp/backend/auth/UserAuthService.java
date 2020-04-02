@@ -3,12 +3,11 @@ package sleepapp.backend.auth;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.sql.*;
+import java.time.Duration;
 import java.time.Instant;
-import java.util.Base64;
-import java.util.Calendar;
+import java.util.*;
 import java.util.Date;
 
 public class UserAuthService {
@@ -18,14 +17,20 @@ public class UserAuthService {
     public static final int TOKEN_LENGTH_STRING = 88;
     public static final long LOGIN_RATE_LIMIT_WAIT_MILLIS = 250;
 
+    public static final long GC_INTERVAL_MILLIS = 1000L * 60 * 15; //TODO Release build value suggestion: 2 hours
+    public static final Duration GC_LEEWAY = Duration.ofHours(12); //TODO Release build value suggestion: 30 days
+
     Connection db;
     SecureRandom rand = new SecureRandom();
     Base64.Encoder base64Encoder = Base64.getEncoder();
     Base64.Decoder base64Decoder = Base64.getDecoder();
     byte[] tokenBuffer = new byte[TOKEN_LENGTH_BYTES];
+    private Timer gcTimer = new Timer("gcTimer", true);
 
     public UserAuthService(Connection db) {
         this.db = db;
+
+        gcTimer.schedule(garbageCollector, 0, GC_INTERVAL_MILLIS);
     }
 
     public LoginResult logIn(String username, String password, int accessLevel) {
@@ -165,4 +170,22 @@ public class UserAuthService {
     private String decodePassword(String password) {
         return password;
     }
+
+    private final TimerTask garbageCollector = new TimerTask () {
+        @Override
+        public void run() {
+            try {
+                PreparedStatement stmt = db.prepareStatement(
+                        "DELETE FROM authenticated_clients WHERE expire < ?"
+                );
+                Instant timeAfterLeeway = Instant.now().minus(GC_LEEWAY);
+                stmt.setTimestamp(1, Timestamp.from(timeAfterLeeway));
+                int result = stmt.executeUpdate();
+                if (result > 0)
+                    System.out.println("UserAuthService GC yeeted " + result + " expired tokens");
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    };
 }

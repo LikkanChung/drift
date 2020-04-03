@@ -88,6 +88,8 @@ public class LoginActivity extends AppCompatActivity {
         butt = findViewById(R.id.butt_login);
         butt.setOnClickListener((View view) -> {
             butt.setEnabled(false);
+            usernameView.setEnabled(false);
+            passwordView.setEnabled(false);
             JsonObjectRequest request = new JsonObjectRequest(
                     Request.Method.POST, getString(R.string.api_url_login),
                     null,
@@ -135,6 +137,7 @@ public class LoginActivity extends AppCompatActivity {
         editor.putString(getString(R.string.spref_login_token_expire), expires);
         editor.putLong(getString(R.string.spref_uid), uid);
         editor.putString(getString(R.string.spref_login_token), token);
+        editor.putString(getString(R.string.spref_cache_username), usernameView.getText().toString());
         editor.commit();
 
         MainActivity.launch(this);
@@ -142,6 +145,8 @@ public class LoginActivity extends AppCompatActivity {
     };
 
     private final Response.ErrorListener onFailure = (VolleyError error) -> {
+        usernameView.setEnabled(true);
+        passwordView.setEnabled(true);
         butt.setEnabled(true);
         TextView explanation = findViewById(R.id.text_error_explanation);
 

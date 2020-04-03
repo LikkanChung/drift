@@ -20,27 +20,11 @@ import java.util.Map;
 public abstract class Endpoint implements HttpHandler {
 
     public abstract String getPath();
-    public abstract int minimumAccessLevel();
-    protected abstract boolean get(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException;
-    protected abstract boolean post(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException;
-    protected abstract boolean put(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException;
-    protected abstract boolean head(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException;
-    protected abstract boolean delete(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException;
-    protected abstract boolean patch(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException;
-    protected abstract boolean options(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException;
+    public abstract int getMinimumAccessLevel();
 
     @Override
     public void handle(HttpExchange ex) throws IOException {
         Map<String, String> params = queryToMap(ex.getRequestURI().getQuery());
-//        long userid = 0;
-//        String useridString = params.get("userid");
-//        if (useridString != null) {
-//            try {
-//                userid = Long.parseLong(useridString);
-//            } catch (NumberFormatException e) {
-//
-//            }
-//        }
 
         UserAuth userAuth = Server.getUserAuthService().authRequest(ex);
 
@@ -50,7 +34,7 @@ public abstract class Endpoint implements HttpHandler {
             return;
         }
 
-        if (userAuth.getAccessLevel() < minimumAccessLevel()) {
+        if (userAuth.getAccessLevel() < getMinimumAccessLevel()) {
             ex.sendResponseHeaders(HttpsURLConnection.HTTP_UNAUTHORIZED, 0);
             ex.close();
             return;
@@ -59,29 +43,29 @@ public abstract class Endpoint implements HttpHandler {
         System.out.println("Resolving request for userid " + userAuth.getUserId());
 
         String method = ex.getRequestMethod().toUpperCase();
-        boolean response = false;
+        boolean implemented = false;
         try {
             switch (method) {
                 case "GET":
-                    response = get(ex, userAuth, params);
+                    implemented = get(ex, userAuth, params);
                     break;
                 case "POST":
-                    response = post(ex, userAuth, params);
+                    implemented = post(ex, userAuth, params);
                     break;
                 case "PUT":
-                    response = put(ex, userAuth, params);
+                    implemented = put(ex, userAuth, params);
                     break;
                 case "HEAD":
-                    response = head(ex, userAuth, params);
+                    implemented = head(ex, userAuth, params);
                     break;
                 case "DELETE":
-                    response = delete(ex, userAuth, params);
+                    implemented = delete(ex, userAuth, params);
                     break;
                 case "PATCH":
-                    response = patch(ex, userAuth, params);
+                    implemented = patch(ex, userAuth, params);
                     break;
                 case "OPTIONS":
-                    response = options(ex, userAuth, params);
+                    implemented = options(ex, userAuth, params);
                     break;
             }
         } catch (IOException e) {
@@ -110,7 +94,7 @@ public abstract class Endpoint implements HttpHandler {
             return;
         }
 
-        if (!response)
+        if (!implemented)
             ex.sendResponseHeaders(HttpsURLConnection.HTTP_BAD_METHOD, 0);
 
         ex.close();
@@ -180,10 +164,32 @@ public abstract class Endpoint implements HttpHandler {
 
     public static Endpoint[] initialiseAll(Connection dbConn) {
         return new Endpoint[] {
-                new SleepyTestHandler(),
-                new AlarmsHandler(dbConn),
-                new LoginHandler()
+                new SleepyokEndpoint(),
+                new AlarmsEndpoint(dbConn),
+                new LoginEndpoint()
         };
+    }
+
+    protected boolean get(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
+        return false;
+    }
+    protected boolean post(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
+        return false;
+    }
+    protected boolean put(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
+        return false;
+    }
+    protected boolean head(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
+        return false;
+    }
+    protected boolean delete(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
+        return false;
+    }
+    protected boolean patch(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
+        return false;
+    }
+    protected boolean options(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
+        return false;
     }
 
 }

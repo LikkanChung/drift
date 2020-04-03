@@ -5,9 +5,7 @@ import sleepapp.backend.auth.UserAuthService;
 import sleepapp.backend.endpoint.Endpoint;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;

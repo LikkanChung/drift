@@ -8,28 +8,19 @@ import sleepapp.backend.auth.UserAuth;
 import sleepapp.backend.auth.UserAuthService;
 
 import javax.net.ssl.HttpsURLConnection;
-import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.Map;
 
-public class LoginHandler extends Endpoint {
+public class LoginEndpoint extends Endpoint {
     @Override
     public String getPath() {
         return "/login";
     }
 
     @Override
-    public int minimumAccessLevel() {
+    public int getMinimumAccessLevel() {
         return UserAuth.ACCESS_LEVEL_NONE;
-    }
-
-    @Override
-    protected boolean get(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
-        return false;
     }
 
     @Override
@@ -88,30 +79,5 @@ public class LoginHandler extends Endpoint {
                 writeResponse(exchange, "Internal error", HttpsURLConnection.HTTP_INTERNAL_ERROR);
                 return true;
         }
-    }
-
-    @Override
-    protected boolean put(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
-        return false;
-    }
-
-    @Override
-    protected boolean head(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
-        return false;
-    }
-
-    @Override
-    protected boolean delete(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
-        return false;
-    }
-
-    @Override
-    protected boolean patch(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
-        return false;
-    }
-
-    @Override
-    protected boolean options(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
-        return false;
     }
 }

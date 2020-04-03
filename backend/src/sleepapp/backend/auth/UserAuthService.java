@@ -7,8 +7,10 @@ import java.security.SecureRandom;
 import java.sql.*;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.Base64;
 import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class UserAuthService {
 

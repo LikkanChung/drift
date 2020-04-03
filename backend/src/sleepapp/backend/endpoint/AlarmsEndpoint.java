@@ -16,14 +16,12 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Map;
 
-public class AlarmsHandler extends Endpoint {
-
-    private static final String MY_PATH = "/alarms";
+public class AlarmsEndpoint extends Endpoint {
 
     private Connection db;
     private JsonToDatabaseMapper mapper;
 
-    public AlarmsHandler(Connection db) {
+    public AlarmsEndpoint(Connection db) {
         this.db = db;
         mapper = new JsonToDatabaseMapper(db, "alarms", SqlType.LONG, "aid");
         mapper.setAuthKey("uid", SqlType.LONG);
@@ -37,25 +35,13 @@ public class AlarmsHandler extends Endpoint {
         });
     }
 
-//    private JSONArray alarmsToJson(ResultSet rs) throws SQLException {
-//        JSONArray array = new JSONArray();
-//        while (rs.next()) {
-//            JSONObject obj = new JSONObject();
-//            obj.put("aid", rs.getLong("aid"));
-//            obj.put("time", rs.getTimestamp("time").toString());
-//            array.put(obj);
-//        }
-//        return array;
-//    }
-
-
     @Override
     public String getPath() {
-        return MY_PATH;
+        return "/alarms";
     }
 
     @Override
-    public int minimumAccessLevel() {
+    public int getMinimumAccessLevel() {
         return UserAuth.ACCESS_LEVEL_READ_WRITE;
     }
 
@@ -100,16 +86,6 @@ public class AlarmsHandler extends Endpoint {
     }
 
     @Override
-    protected boolean put(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
-        return false;
-    }
-
-    @Override
-    protected boolean head(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
-        return false;
-    }
-
-    @Override
     protected boolean delete(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
         return defaultDelete(exchange, mapper, userAuth);
     }
@@ -117,11 +93,6 @@ public class AlarmsHandler extends Endpoint {
     @Override
     protected boolean patch(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
         return defaultPatch(exchange, mapper, userAuth);
-    }
-
-    @Override
-    protected boolean options(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
-        return false;
     }
 
 }

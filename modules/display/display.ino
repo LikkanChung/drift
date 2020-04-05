@@ -51,19 +51,68 @@ const int pinV0 = 7;
 const int contrast = 75;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
+char inChar = 0;
+String inStr  = "";
+String partStr[] = {"","",""};
+int part = 0;
+
 void setup() {
   analogWrite(pinV0, contrast);
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
-  // Print a message to the LCD.
-  lcd.print("hello, world!");
-
+  Serial.begin(9600);
 }
 
 void loop() {
-  // set the cursor to column 0, line 1
-  // (note: line 1 is the second row, since counting begins with 0):
-  lcd.setCursor(0, 1);
-  // print the number of seconds since reset:
-  lcd.print(millis() / 1000);
+  while (Serial.available() > 0) {
+    inChar = Serial.read();
+    inStr += (char)inChar;
+    if (inChar == '\n') {
+      if (inStr.length() > 0 && inStr.charAt(0) == '#') {
+          Serial.println("In if");
+          int i = 1;
+          char readChar = inStr.charAt(i);
+          while (i < inStr.length() && part < 3) {
+            readChar = inStr.charAt(i);
+            Serial.print("Working with: ");Serial.println(readChar);
+            if (readChar == ';') {
+              part++;
+              Serial.println("PART ++");
+            } else {
+              if ((part == 0 || part == 1) && !isDigit(readChar)) {
+                // case indexes not +ve digits
+                Serial.println("HERE");
+              } else {
+                partStr[part] += (char)readChar; 
+                Serial.println("HERE 2");
+             
+              }
+            }
+            i++;
+          }
+          Serial.println("PART 0: "); 
+          Serial.println(partStr[0]);
+          inStr = "";
+
+          int x = partStr[0].toInt();
+          x = min(x, 15);
+          x = max(x, 0);
+          int y = partStr[1].toInt();
+          y = min(y, 1);
+          y = max(y, 0);
+          lcd.setCursor(x,y);
+          lcd.print(partStr[2]);
+          part = 0;
+          partStr[0] = "";
+          partStr[1] = "";
+          partStr[2] = "";
+      }
+    }
+  }
+
+
+ 
+
+
+  
 }

@@ -26,8 +26,7 @@ public class UserAuthService {
     SecureRandom rand = new SecureRandom();
     Base64.Encoder base64Encoder = Base64.getEncoder();
     Base64.Decoder base64Decoder = Base64.getDecoder();
-    byte[] tokenBuffer = new byte[TOKEN_LENGTH_BYTES];
-    private Timer gcTimer = new Timer("gcTimer", true);
+    private Timer gcTimer = new Timer("UserAuthService gcTimer", true);
 
     public UserAuthService(Connection db) {
         this.db = db;
@@ -86,9 +85,19 @@ public class UserAuthService {
                 obtainedUid = rs.getLong("uid");
             }
 
+            return createLogin(accessLevel, obtainedUid);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return LoginResult.DB_ERROR_HAPPENED;
+        }
+    }
+
+    public LoginResult createLogin(int accessLevel, long uid) {
+        byte[] tokenBuffer = new byte[TOKEN_LENGTH_BYTES];
+
+        try {
             rand.nextBytes(tokenBuffer);
 
-            String token = base64Encoder.encodeToString(tokenBuffer);
             Instant now = Instant.now();
             Instant expiryTime = now.plus(UserAuth.defaultValidityPeriod(accessLevel));
 
@@ -101,14 +110,14 @@ public class UserAuthService {
                             "(?)" +
                             ")"
             );
-            putStmt.setLong(1, obtainedUid);
+            putStmt.setLong(1, uid);
             putStmt.setBytes(2, tokenBuffer);
             putStmt.setInt(3, accessLevel);
             putStmt.setTimestamp(4, Timestamp.from(expiryTime));
 
             int success = putStmt.executeUpdate();
             if (success > 0) {
-                return new LoginResult(LoginResult.Status.SUCCESS, obtainedUid, token, now, expiryTime);
+                return new LoginResult(LoginResult.Status.SUCCESS, uid, tokenBuffer, now, expiryTime);
             } else {
                 System.err.println("Add authenticated client update failed");
                 return LoginResult.DB_ERROR_HAPPENED;
@@ -118,6 +127,7 @@ public class UserAuthService {
             return LoginResult.DB_ERROR_HAPPENED;
         }
     }
+
 
     public UserAuth authRequest(HttpExchange exchange) {
         Headers requestHeaders = exchange.getRequestHeaders();

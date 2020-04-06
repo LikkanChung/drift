@@ -21,7 +21,7 @@ public class ApiLoginTest {
 
         LoginResult result = userAuth.logIn("jack1999", "letmein0", UserAuth.ACCESS_LEVEL_READ_WRITE);
         System.out.println(result.getStatus());
-        System.out.println(result.getToken());
+        System.out.println(result.getTokenAsString());
     }
 
 }

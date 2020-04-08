@@ -43,8 +43,8 @@ void loop() {
   // put your main code here, to run repeatedly:
   // keypad
   char keyPressed = keypad.getKey();
-  if (keyPressed) {
-    inputChars += keyPressed;
+  if (keyPressed != NO_KEY) {
+    inputChars.concat(keyPressed);
   }
   
   // rtc
@@ -80,9 +80,11 @@ void loop() {
     }
     if (inChar == '\n') {
       if (partStr[0] == "key") {
+        inputChars.replace("\n","");
         Serial.println(inputChars);
         inputChars = "";
       } else if (partStr[0] == "time") {
+        timeStr.replace("\n","");
         Serial.println(timeStr);
       }
       partStr[0] = "";

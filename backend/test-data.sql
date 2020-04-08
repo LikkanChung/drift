@@ -1,5 +1,6 @@
-INSERT INTO users (preferred_name)
-VALUES ('Jack');
+INSERT INTO users (preferred_name, username, password)
+VALUES ('Jack', 'jack1999', 'letmein0');
+
 INSERT INTO alarms (uid, time)
 SELECT users.uid, TIMESTAMP '2020-03-03 08:30'
 FROM users

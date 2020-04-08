@@ -1,11 +1,16 @@
 package sleepapp.backend.endpoint;
 
-import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import org.json.JSONException;
+import org.json.JSONObject;
+import sleepapp.backend.Server;
+import sleepapp.backend.auth.UserAuth;
+import sleepapp.backend.datamap.JsonToDatabaseMapper;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -15,65 +20,81 @@ import java.util.Map;
 public abstract class Endpoint implements HttpHandler {
 
     public abstract String getPath();
-    protected abstract boolean get(HttpExchange exchange, long userid, Map<String, String> params) throws IOException, SQLException;
-    protected abstract boolean post(HttpExchange exchange, long userid, Map<String, String> params) throws IOException, SQLException;
-    protected abstract boolean put(HttpExchange exchange, long userid, Map<String, String> params) throws IOException, SQLException;
-    protected abstract boolean head(HttpExchange exchange, long userid, Map<String, String> params) throws IOException, SQLException;
-    protected abstract boolean delete(HttpExchange exchange, long userid, Map<String, String> params) throws IOException, SQLException;
-    protected abstract boolean patch(HttpExchange exchange, long userid, Map<String, String> params) throws IOException, SQLException;
-    protected abstract boolean options(HttpExchange exchange, long userid, Map<String, String> params) throws IOException, SQLException;
+    public abstract int getMinimumAccessLevel();
 
     @Override
     public void handle(HttpExchange ex) throws IOException {
-        Headers respHeaders = ex.getResponseHeaders();
-
         Map<String, String> params = queryToMap(ex.getRequestURI().getQuery());
-        long userid = 0;
-        String useridString = params.get("userid");
-        if (useridString != null) {
-            try {
-                userid = Long.parseLong(useridString);
-            } catch (NumberFormatException e) {
 
-            }
+        UserAuth userAuth = Server.getUserAuthService().authRequest(ex);
+
+        if (userAuth.getReason() == UserAuth.Reason.EXPIRED_TOKEN) {
+            writeResponse(ex, "Token expired", HttpsURLConnection.HTTP_UNAUTHORIZED);
+            ex.close();
+            return;
         }
 
-        System.out.println("Resolving request for userid " + userid);
+        if (userAuth.getAccessLevel() < getMinimumAccessLevel()) {
+            ex.sendResponseHeaders(HttpsURLConnection.HTTP_UNAUTHORIZED, 0);
+            ex.close();
+            return;
+        }
 
-        respHeaders.add("Content-Type", "application/json; charset=utf8");
+        System.out.println("Resolving request for userid " + userAuth.getUserId());
 
         String method = ex.getRequestMethod().toUpperCase();
-        boolean response = false;
+        boolean implemented = false;
         try {
             switch (method) {
                 case "GET":
-                    response = get(ex, userid, params);
+                    implemented = get(ex, userAuth, params);
+                    break;
                 case "POST":
-                    response = post(ex, userid, params);
+                    implemented = post(ex, userAuth, params);
+                    break;
                 case "PUT":
-                    response = put(ex, userid, params);
+                    implemented = put(ex, userAuth, params);
+                    break;
                 case "HEAD":
-                    response = head(ex, userid, params);
+                    implemented = head(ex, userAuth, params);
+                    break;
                 case "DELETE":
-                    response = delete(ex, userid, params);
+                    implemented = delete(ex, userAuth, params);
+                    break;
                 case "PATCH":
-                    response = patch(ex, userid, params);
+                    implemented = patch(ex, userAuth, params);
+                    break;
                 case "OPTIONS":
-                    response = options(ex, userid, params);
+                    implemented = options(ex, userAuth, params);
+                    break;
             }
         } catch (IOException e) {
             System.err.println("IOException in request handler");
             e.printStackTrace();
             ex.sendResponseHeaders(HttpsURLConnection.HTTP_INTERNAL_ERROR, 0);
+            ex.close();
             return;
         } catch (SQLException e) {
             System.err.println("SQLException in request handler");
             e.printStackTrace();
             ex.sendResponseHeaders(HttpsURLConnection.HTTP_INTERNAL_ERROR, 0);
+            ex.close();
+            return;
+        } catch (JSONException e) {
+            System.err.println("JSONException in request handler");
+            e.printStackTrace();
+            ex.sendResponseHeaders(HttpsURLConnection.HTTP_INTERNAL_ERROR, 0);
+            ex.close();
+            return;
+        } catch (RuntimeException e) {
+            System.err.println("RuntimeException in request handler");
+            e.printStackTrace();
+            ex.sendResponseHeaders(HttpsURLConnection.HTTP_INTERNAL_ERROR, 0);
+            ex.close();
             return;
         }
 
-        if (!response)
+        if (!implemented)
             ex.sendResponseHeaders(HttpsURLConnection.HTTP_BAD_METHOD, 0);
 
         ex.close();
@@ -94,9 +115,48 @@ public abstract class Endpoint implements HttpHandler {
         return result;
     }
 
+    protected boolean defaultPatch(HttpExchange ex, JsonToDatabaseMapper jsonMapper, UserAuth userAuth) throws IOException {
+        JSONObject json = getBodyAsJson(ex);
+        JsonToDatabaseMapper.Flag result = jsonMapper.patch(json, userAuth.getUserId());
+        defaultRespond(ex, jsonMapper, result);
+        return true;
+    }
+
+    protected boolean defaultDelete(HttpExchange ex, JsonToDatabaseMapper jsonMapper, UserAuth userAuth) throws IOException {
+        JSONObject json = getBodyAsJson(ex);
+        JsonToDatabaseMapper.Flag result = jsonMapper.delete(json, userAuth.getUserId());
+        defaultRespond(ex, jsonMapper, result);
+        return true;
+    }
+
+    protected boolean defaultPost(HttpExchange ex, JsonToDatabaseMapper jsonMapper, UserAuth userAuth) throws IOException {
+        JSONObject json = getBodyAsJson(ex);
+        JsonToDatabaseMapper.Flag result = jsonMapper.create(json, userAuth.getUserId());
+        defaultRespond(ex, jsonMapper, result);
+        return true;
+    }
+
+    private void defaultRespond(HttpExchange ex, JsonToDatabaseMapper jsonMapper, JsonToDatabaseMapper.Flag result) throws IOException {
+        if (result != JsonToDatabaseMapper.Flag.OK) {
+            if (result == JsonToDatabaseMapper.Flag.INTERNAL_ERROR) {
+                writeResponse(ex, jsonMapper.explainError(), HttpsURLConnection.HTTP_INTERNAL_ERROR);
+            } else {
+                writeResponse(ex, jsonMapper.explainError(), HttpsURLConnection.HTTP_BAD_REQUEST);
+            }
+        } else {
+            writeResponse(ex, "Ok", HttpsURLConnection.HTTP_ACCEPTED);
+        }
+    }
+
+    protected JSONObject getBodyAsJson(HttpExchange ex) throws IOException {
+        ByteBuffer requestData = ByteBuffer.wrap(ex.getRequestBody().readAllBytes());
+        String requestString = StandardCharsets.UTF_8.decode(requestData).toString();
+        return new JSONObject(requestString);
+    }
+
     protected void writeResponse(HttpExchange ex, String resp, int status) throws IOException {
-        ex.getResponseHeaders().add("Content-Type", "text/html; charset=utf8");
-        byte[] responseBytes = StandardCharsets.UTF_8.encode(resp).array();
+        ex.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
+        byte[] responseBytes = resp.getBytes(StandardCharsets.UTF_8);
         ex.sendResponseHeaders(status, responseBytes.length);
 
         ex.getResponseBody().write(responseBytes);
@@ -104,9 +164,32 @@ public abstract class Endpoint implements HttpHandler {
 
     public static Endpoint[] initialiseAll(Connection dbConn) {
         return new Endpoint[] {
-                new SleepyTestHandler(),
-                new AlarmsHandler(dbConn)
+                new SleepyokEndpoint(),
+                new AlarmsEndpoint(dbConn),
+                new LoginEndpoint()
         };
+    }
+
+    protected boolean get(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
+        return false;
+    }
+    protected boolean post(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
+        return false;
+    }
+    protected boolean put(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
+        return false;
+    }
+    protected boolean head(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
+        return false;
+    }
+    protected boolean delete(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
+        return false;
+    }
+    protected boolean patch(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
+        return false;
+    }
+    protected boolean options(HttpExchange exchange, UserAuth userAuth, Map<String, String> params) throws IOException, SQLException {
+        return false;
     }
 
 }

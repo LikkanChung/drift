@@ -1,4 +1,4 @@
 .idea/
 out/
-hubcode/venv/lib/
 *.iml
+gen/

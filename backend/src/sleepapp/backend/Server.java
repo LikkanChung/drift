@@ -1,11 +1,10 @@
 package sleepapp.backend;
 
 import com.sun.net.httpserver.HttpServer;
+import sleepapp.backend.auth.UserAuthService;
 import sleepapp.backend.endpoint.Endpoint;
-import sleepapp.backend.endpoint.SleepyTestHandler;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -21,19 +20,19 @@ public class Server {
     private static final String DB_USERNAME = "jack";
     private static final String DB_PASSWORD = "21ysxqkcl1i3c3h8ou7l"; //TODO I'm uncomfortable
 
-    private static final InetAddress LISTEN_ADDRESS = InetAddress.getLoopbackAddress();
-
+    private static UserAuthService userAuthService;
 
     public static void main(String[] args) throws IOException {
         Scanner stdin = new Scanner(System.in);
-        Connection dbConn = openPostgresConnection(DB_URL);
+        Connection dbConn = openPostgresConnection(DB_URL, DB_USERNAME, DB_PASSWORD);
+        userAuthService = new UserAuthService(dbConn);
 
         if (dbConn == null) {
             System.out.println("Opening db connection failed - terminating...");
             return;
         }
 
-        HttpServer server = HttpServer.create(new InetSocketAddress(LISTEN_ADDRESS, PORT), BACKLOG);
+        HttpServer server = HttpServer.create(new InetSocketAddress(PORT), BACKLOG);
 
         for (Endpoint e: Endpoint.initialiseAll(dbConn)) {
             server.createContext(e.getPath(), e);
@@ -46,7 +45,7 @@ public class Server {
         System.out.println("Bye then");
     }
 
-    private static Connection openPostgresConnection(String dbUrl) {
+    public static Connection openPostgresConnection(String dbUrl, String dbUsername, String dbPassword) {
         try {
             Class.forName("org.postgresql.Driver");
         } catch (ClassNotFoundException e) {
@@ -55,13 +54,17 @@ public class Server {
         }
 
         try {
-            return DriverManager.getConnection(dbUrl, DB_USERNAME, DB_PASSWORD);
+            return DriverManager.getConnection(dbUrl, dbUsername, dbPassword);
         } catch (SQLException e) {
             System.out.println("Connection to the database failed! Reason: " + e.getMessage());
             System.out.println("Terminating.");
             return null;
         }
 
+    }
+
+    public static UserAuthService getUserAuthService() {
+        return userAuthService;
     }
 
 }

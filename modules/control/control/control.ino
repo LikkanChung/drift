@@ -1,6 +1,6 @@
 //  protocol 
-// Write to arduino - #<k|h|m|s>;[<k|h|m|s>;...] where k,h,m,s are key, hour, min, sec respectively. kms can be chained to return 
-// Return result <result>;[<result>;...]
+// Write to arduino - #time; or #key;
+// Return result as a string where it is hh:mm:ss, or a string of the chars 01234..d*# etc
 
 // keypad stuff
 #include<Keypad.h>
@@ -15,12 +15,18 @@ char keys[ROWS][COLS] = {
 byte pinRows[ROWS] = {2, 3, 4 ,5}; // pins 1-4 of keypad
 byte pinCols[COLS] = {6, 7, 8 ,9}; // pins 5-8 of keypad
 Keypad keypad = Keypad(makeKeymap(keys),pinRows, pinCols, ROWS, COLS);
+String inputChars = "";
 
 // rtc stuff
 #include<Wire.h>
 #include<DS3231.h>
 DS3231 clock;
 RTCDateTime time;
+
+// Serial Reading
+char inChar = 0;
+String partStr[] = {""};
+int part = 0;
 
 void setup() {
   // put your setup code here, to run once:
@@ -38,16 +44,46 @@ void loop() {
   // keypad
   char keyPressed = keypad.getKey();
   if (keyPressed) {
-    Serial.println(keyPressed);  
+    inputChars += keyPressed;
   }
-
   
   // rtc
   time = clock.getDateTime();
-  Serial.print(time.hour);
-  Serial.print(":");
-  Serial.print(time.minute);
-  Serial.print(":");
-  Serial.println(time.second);
-  delay(1000);
+  String timeStr = "";
+  String timePart[] = {"","",""};
+  timePart[0] = time.hour;
+  timePart[1] = time.minute;
+  timePart[2] = time.second;
+  int i = 0;
+  for (i = 0; i < 3; i++) {
+    int j = 0;
+    for (j = 0; j < timePart[i].length(); j++) {
+      timeStr += timePart[i].charAt(j);
+    }
+    if (i < 2) {
+      timeStr += ':';
+    }
+  }
+
+  while (Serial.available() > 0) {
+    inChar = Serial.read();
+
+    if (inChar == '#') {
+      part = 0;
+    } else if (inChar == ';') {
+      part++;
+    } else {
+      partStr[part] += (char)inChar;
+    }
+    if (inChar == '\n') {
+      if (partStr[0] == "key") {
+        Serial.println(inputChars);
+        inputChars = "";
+      } else if (partStr[0] == "time") {
+        Serial.println(timeStr);
+      }
+      partStr[0] = "";
+      part = 0;
+    }
+  }
 }

@@ -48,7 +48,7 @@
 const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
 
 const int pinV0 = 7;
-const int contrast = 75;
+const int contrast = 50;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 char inChar = 0;
@@ -69,29 +69,28 @@ void loop() {
     inStr += (char)inChar;
     if (inChar == '\n') {
       if (inStr.length() > 0 && inStr.charAt(0) == '#') {
-          Serial.println("In if");
+          
           int i = 1;
           char readChar = inStr.charAt(i);
           while (i < inStr.length() && part < 3) {
             readChar = inStr.charAt(i);
-            Serial.print("Working with: ");Serial.println(readChar);
+            
             if (readChar == ';') {
               part++;
-              Serial.println("PART ++");
+              
             } else {
               if ((part == 0 || part == 1) && !isDigit(readChar)) {
                 // case indexes not +ve digits
-                Serial.println("HERE");
+        
               } else {
                 partStr[part] += (char)readChar; 
-                Serial.println("HERE 2");
+       
              
               }
             }
             i++;
           }
-          Serial.println("PART 0: "); 
-          Serial.println(partStr[0]);
+
           inStr = "";
 
           int x = partStr[0].toInt();
@@ -102,6 +101,7 @@ void loop() {
           y = max(y, 0);
           lcd.setCursor(x,y);
           lcd.print(partStr[2]);
+          Serial.println(partStr[2]);
           part = 0;
           partStr[0] = "";
           partStr[1] = "";

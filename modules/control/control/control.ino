@@ -57,6 +57,9 @@ void loop() {
   int i = 0;
   for (i = 0; i < 3; i++) {
     int j = 0;
+    if (timePart[i].length() < 2) {
+      timeStr += '0';
+    }
     for (j = 0; j < timePart[i].length(); j++) {
       timeStr += timePart[i].charAt(j);
     }

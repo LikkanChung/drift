@@ -14,12 +14,12 @@ from backend_connection import fetch
 #deactivate afterwards
 
 
-arduinos_connected = False
+arduinos_connected = True
 
-display_module_port = '/dev/ttyUSB4'
+display_module_port = '/dev/ttyUSB1'
 keypad_module_port = '/dev/ttyUSB0'
 light_module_port = '/dev/ttyUSB2'
-sound_module_port = '/dev/ttyUSB3'
+sound_module_port = '/dev/ttyUSB5'
 
 
 TEST_USERNAME = "jack"
@@ -80,14 +80,21 @@ def main(argv):
         sound_arduino = serial.Serial(sound_module_port, 9600, timeout=.1)
         light_arduino = serial.Serial(light_module_port, 9600, timeout=.1)
         keypad_arduino = serial.Serial(keypad_module_port, 9600, timeout=.1)
+        time.sleep(2)
         arduinos = {"display": display_arduino, "sound": sound_arduino, "light": light_arduino, "keypad": keypad_arduino}
         display_arduino.write(b"#0;0;Welcome to drift;\n")
         time.sleep(2)
+        print("connected")
+        
     else:
         arduinos = {"oof" : True}
     grab_alarms(arduinos)
     while 1:
         schedule.run_pending()
+
+        keypad_arduino.write(b"#time;\n")
+        t = keypad_arduino.readline()
+        display_arduino.write(b"#0;1;" + t[:8] + b";\n")
         time.sleep(1)
 
 

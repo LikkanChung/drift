@@ -13,6 +13,7 @@ from backend_connection import fetch
 #activate light and sound when the alarm is received
 #deactivate afterwards
 
+
 arduinos_connected = False
 
 display_module_port = '/dev/ttyUSB4'
@@ -42,11 +43,12 @@ def grab_alarms(arduinos):
         minute = alarm["time"][14:16]
         print(hour + ":" + minute)
         schedule.every().day.at(hour + ":" + minute).do(alarm_once, arduinos)
+        print("alarm entered")
     schedule.every().hour.do(grab_alarms, arduinos)
 
 def shutdown_once(arduinos):
     shutdown(arduinos)
-    return schedule.Cancel_Job
+    return schedule.CancelJob
 
 def shutdown(arduinos):
     arduinos["light"].write(b"#0;-1;\n")
@@ -55,12 +57,15 @@ def shutdown(arduinos):
 
 def alarm_once(arduinos):
     alarm(arduinos)
-    return schedule.Cancel_Job
+    return schedule.CancelJob
 
 
 def alarm(arduinos):
-    arduinos["light"].write(b"#10;10;\n")
-    arduinos["sound"].write(b"#10;10;\n")
+    print("An alarm is going off")
+    print("Success")
+    if(arduinos_connected):
+        arduinos["light"].write(b"#10;10;\n")
+        arduinos["sound"].write(b"#10;10;\n")
     print("send an alarm to the modules")
 
 def main(argv):

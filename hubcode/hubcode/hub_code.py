@@ -3,7 +3,7 @@ import sys
 import time
 import json
 import schedule
-import dateutil.parser
+import datetime
 
 from backend_connection import fetch
 
@@ -94,7 +94,9 @@ def main(argv):
 
         keypad_arduino.write(b"#time;\n")
         t = keypad_arduino.readline()
-        display_arduino.write(b"#0;1;" + t[:8] + b";\n")
+        now = datetime.now()
+        now.strftime("%d/%m, %H:%M:%S")
+        display_arduino.write(b"#0;1;" + now.strftime("%d/%m, %H:%M:%S") + b";\n")
         time.sleep(1)
 
 

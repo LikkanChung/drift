@@ -1,4 +1,3 @@
-import http.client
 import urllib.parse
 import urllib.request
 import json
@@ -11,7 +10,6 @@ TEST_PASSWORD =  "21ysxqkcl1i3c3h8ou7l"
 def fetch(server_address, username, password):
     # Authorise
     print("connecting to: " + server_address + ":" + PORT)
-    #http.client.HTTPconnection(server_address + ":" + PORT)
     values = {'username': username, 'password' : password}
     data = urllib.parse.urlencode(values)
     data = data.encode('utf-8')  # data should be bytes

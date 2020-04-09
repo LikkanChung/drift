@@ -14,7 +14,7 @@ from backend_connection import fetch
 #deactivate afterwards
 
 
-arduinos_connected = True
+arduinos_connected = False
 
 display_module_port = '/dev/ttyUSB1'
 keypad_module_port = '/dev/ttyUSB3'
@@ -93,11 +93,13 @@ def main(argv):
     while 1:
         schedule.run_pending()
 
-        keypad_arduino.write(b"#time;\n")
-        t = keypad_arduino.readline()
+        if arduinos_connected:
+            keypad_arduino.write(b"#time;\n")
+            t = keypad_arduino.readline()
         now = datetime.now()
         now.strftime("%d/%m, %H:%M:%S")
-        display_arduino.write(b"#0;1;" + now.strftime("%d/%m, %H:%M:%S") + b";\n")
+        if arduinos_connected:
+            display_arduino.write(b"#0;1;" + now.strftime("%d/%m, %H:%M:%S") + b";\n")
         time.sleep(1)
 
 

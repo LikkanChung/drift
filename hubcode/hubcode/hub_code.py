@@ -14,7 +14,7 @@ from backend_connection import fetch
 #deactivate afterwards
 
 
-arduinos_connected = False
+arduinos_connected = True
 
 display_module_port = '/dev/ttyUSB1'
 keypad_module_port = '/dev/ttyUSB3'
@@ -46,7 +46,7 @@ def grab_alarms(arduinos):
         print("alarm entered")
         if arduinos_connected:
             alarm_notification = "Alarm at " + hour + ":" + minute
-            arduinos["display"].write(bytes("#0;0;" + alarm_notification +";\n"))
+            arduinos["display"].write(b"#0;0;" + alarm_notification.encode() +b";\n")
     schedule.every().minute.at(":17").do(grab_alarms, arduinos)
 
 def shutdown_once(arduinos):
@@ -99,7 +99,7 @@ def main(argv):
         now = datetime.now()
         now.strftime("%d/%m, %H:%M:%S")
         if arduinos_connected:
-            display_arduino.write(b"#0;1;" + now.strftime("%d/%m, %H:%M:%S") + b";\n")
+            display_arduino.write(b"#0;1;" + now.strftime("%d/%m, %H:%M:%S").encode() + b";\n")
         time.sleep(1)
 
 

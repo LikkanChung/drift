@@ -4,7 +4,9 @@
 
 const int led[] = {3,5,6}; // use pwm pins
 
-const int color[] = {1,1,1}; // white - not normalised
+const double startColor[] = {1.0,0.9294,0.8706};; // white - not normalised
+const double endColor[] = {1.0,0.8078,0.6510};
+double colGradient[] = {0,0,0};
 
 long delayTimer = 0;
 
@@ -57,6 +59,11 @@ void loop() {
       part = 0;
 
       delayTimer = max(0, delayTimer);
+
+      // colour change gradient
+      for (int i = 0; i < 3; i++) {
+        colGradient[i] = (double)(endColor[i] - startColor[i])/(double)(timer*1000);
+      }
     }
   }
 
@@ -75,7 +82,13 @@ void loop() {
 
   int i = 0;
   for (i=0; i < 3; i++) {
-    analogWrite(led[i], currentBrightness * color[i]);
+    if (millis() > endTime) {
+      analogWrite(led[i], currentBrightness * endColor[i]);
+    } else if (millis() < startTime) {
+      analogWrite(led[i], currentBrightness * startColor[i]);
+    } else {
+      analogWrite(led[i], currentBrightness * ((colGradient[i] * (millis() - startTime)) + startColor[i]));
+    }
   }
   
 

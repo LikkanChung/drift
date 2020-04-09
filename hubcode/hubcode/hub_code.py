@@ -3,7 +3,7 @@ import sys
 import time
 import json
 import schedule
-import dateutil.parser
+import datetime
 
 from backend_connection import fetch
 
@@ -44,6 +44,9 @@ def grab_alarms(arduinos):
         print(hour + ":" + minute)
         schedule.every().day.at(hour + ":" + minute).do(alarm_once, arduinos)
         print("alarm entered")
+        if arduinos_connected:
+            alarm_notification = "Alarm at " + hour + ":" + minute
+            display_arduino.write(bytes("#0;0;" + alarm_notification +";\n"))
     schedule.every().minute.at(":17").do(grab_alarms, arduinos)
 
 def shutdown_once(arduinos):
@@ -92,7 +95,9 @@ def main(argv):
 
         keypad_arduino.write(b"#time;\n")
         t = keypad_arduino.readline()
-        display_arduino.write(b"#0;1;" + t[:8] + b";\n")
+        now = datetime.now()
+        now.strftime("%d/%m, %H:%M:%S")
+        display_arduino.write(b"#0;1;" + now.strftime("%d/%m, %H:%M:%S") + b";\n")
         time.sleep(1)
 
 

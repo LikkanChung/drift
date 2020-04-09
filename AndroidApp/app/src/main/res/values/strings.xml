@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE resources [
+    <!ENTITY appname "Drift">
+    <!ENTITY help_url_prefix "https://jackcorsi.dev/sleepy">
+    <!ENTITY help_url_explain_relog "/explainrelog.php">
+    <!ENTITY api_url_prefix "http://192.168.0.103:3333">
+    ]>
+
+<resources>
+    <string name="api_url_login">&api_url_prefix;/login</string>
+
+    <string name="spref_file_name">pref</string>
+    <string name="spref_uid">uid</string>
+    <string name="spref_login_token">login_token</string>
+    <string name="spref_login_token_start">login_start</string>
+    <string name="spref_login_token_expire">login_expire</string>
+
+    <string name="spref_cache_username">username</string>
+
+    <string name="app_name">&appname;</string>
+    <string name="title_home">Home</string>
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_notifications">Notifications</string>
+    <string name="title_alarms">Alarms</string>
+    <string name="alarm_heading">Your alarms</string>
+
+    <string name="action_login">Sign in</string>
+
+    <string name="error_generic">
+        Ouch, something went wrong, and we\'re not sure exactly what. If this keeps happening,
+        please let our team know so we can fix it.
+    </string>
+
+    <string name="login_relog_explanation">
+        Sign in again to continue using &appname;.
+        <a href="&help_url_prefix;&help_url_explain_relog;">
+            Why?
+        </a>
+    </string>
+    <string name="login_higher_permissions_explanation">
+        Re-enter your password to continue
+    </string>
+    <string name="login_no_response_explanation">
+        Could not connect to &appname; servers - check your internet connection
+    </string>
+    <string name="login_unauthorized_response_explanation">
+        Sorry, we don\'t recognise that combination
+    </string>
+    <string name="login_interal_error_response_explanation">
+        Oops, our servers encountered an internal problem. If you keep getting this message,
+        please let our team know so we can fix it.
+    </string>
+
+    <string name="hint_username_field">Username or Email</string>
+    <string name="hint_password_field">Password</string>
+</resources>

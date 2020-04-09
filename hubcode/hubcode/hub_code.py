@@ -3,7 +3,7 @@ import sys
 import time
 import json
 import schedule
-import datetime
+from datetime import datetime
 
 from backend_connection import fetch
 

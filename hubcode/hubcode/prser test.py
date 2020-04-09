@@ -13,7 +13,18 @@ def main():
     #DEFAULT = datetime(2003, 9, 25)
     #p = parse("2020-04-10T10:00:00Z")
     #print(p)
-
+    too_early = datetime(2000,1,1)
+    print(too_early)
+    then = datetime.now()
+    long_time = then-too_early
+    print(long_time.total_seconds())
+    time.sleep(2)
+    now = datetime.now()
+    passed = now - then
+    print(passed.seconds)
+    print(then)
+    print(now)
+    print(passed)
 
 
 if __name__ == "__main__":

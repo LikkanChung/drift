@@ -44,7 +44,7 @@ def grab_alarms(arduinos):
         print(hour + ":" + minute)
         schedule.every().day.at(hour + ":" + minute).do(alarm_once, arduinos)
         print("alarm entered")
-    schedule.every().hour.do(grab_alarms, arduinos)
+    schedule.every().minute.at(":17").do(grab_alarms, arduinos)
 
 def shutdown_once(arduinos):
     shutdown(arduinos)
@@ -78,10 +78,10 @@ def main(argv):
         light_arduino = serial.Serial(light_module_port, 9600, timeout=.1)
         keypad_arduino = serial.Serial(keypad_module_port, 9600, timeout=.1)
         arduinos = {"display": display_arduino, "sound": sound_arduino, "light": light_arduino, "keypad": keypad_arduino}
+        display_arduino.write(b"#0;0;Welcome to drift;\n")
         time.sleep(2)
     else:
         arduinos = {"oof" : True}
-    #display_arduino.write(b"#0;0;Welcome to drift;\n")
     grab_alarms(arduinos)
     while 1:
         schedule.run_pending()

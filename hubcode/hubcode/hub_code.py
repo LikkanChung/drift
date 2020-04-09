@@ -17,7 +17,7 @@ from backend_connection import fetch
 arduinos_connected = True
 
 display_module_port = '/dev/ttyUSB1'
-keypad_module_port = '/dev/ttyUSB0'
+keypad_module_port = '/dev/ttyUSB3'
 light_module_port = '/dev/ttyUSB2'
 sound_module_port = '/dev/ttyUSB5'
 
@@ -85,6 +85,7 @@ def main(argv):
         display_arduino.write(b"#0;0;Welcome to drift;\n")
         time.sleep(2)
         print("connected")
+        keypad_arduino.write(b"#set;2020;04;10;16;54;50;\n")
         
     else:
         arduinos = {"oof" : True}

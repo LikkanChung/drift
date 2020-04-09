@@ -25,7 +25,7 @@ RTCDateTime time;
 
 // Serial Reading
 char inChar = 0;
-String partStr[] = {""};
+String partStr[] = {"","","","","","",""};
 int part = 0;
 
 void setup() {
@@ -86,8 +86,23 @@ void loop() {
       } else if (partStr[0] == "time") {
         timeStr.replace("\n","");
         Serial.println(timeStr);
+      } else if (partStr[0] == "set") {
+        int y,mo,d,h,mi,s;
+        y = partStr[1].toInt();
+        mo = partStr[2].toInt();
+        d = partStr[3].toInt();
+        h = partStr[4].toInt();
+        mi = partStr[5].toInt();
+        s = partStr[6].toInt();
+        clock.setDateTime(y,mo,d,h,mi,s);
       }
       partStr[0] = "";
+      partStr[1] = "";
+      partStr[2] = "";
+      partStr[3] = "";
+      partStr[4] = "";
+      partStr[5] = "";
+      partStr[6] = "";
       part = 0;
     }
   }

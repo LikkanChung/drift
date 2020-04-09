@@ -3,7 +3,7 @@ import sys
 import time
 import schedule
 
-from hubcode.backend_connection import fetch
+from backend_connection import fetch
 
 #The hub should
 #authenticate from the back end
@@ -12,10 +12,10 @@ from hubcode.backend_connection import fetch
 #deactivate afterwards
 
 
-display_module_port = 'COM1'
-keypad_module_port = 'COM4'
-light_module_port = 'COM2'
-sound_module_port = 'COM3'
+display_module_port = '/dev/ttyUSB4'
+keypad_module_port = '/dev/ttyUSB0'
+light_module_port = '/dev/ttyUSB2'
+sound_module_port = '/dev/ttyUSB3'
 
 
 TEST_USERNAME = "jack"
@@ -44,8 +44,8 @@ def shutdown_once(arduinos):
     return schedule.Cancel_Job
 
 def shutdown(arduinos):
-    arduinos["light"].write("#0;-1;\n")
-    arduinos["sound"].write("#0:-1;\n")
+    arduinos["light"].write(b"#0;-1;\n")
+    arduinos["sound"].write(b"#0;-1;\n")
     print("shutdown modules")
 
 def alarm_once(arduinos):
@@ -54,22 +54,23 @@ def alarm_once(arduinos):
 
 
 def alarm(arduinos):
-    arduinos["light"].write("#1;300;\n")
-    arduinos["sound"].write("#300:1;\n")
+    arduinos["light"].write(b"#10;10;\n")
+    arduinos["sound"].write(b"#10;10;\n")
     print("send an alarm to the modules")
 
 def main(argv):
     print("Attempting connection")
     #if len(argv) != 2:
     #    print("Usage: " + argv[0] + "[COM port number]")
-    display_arduino = serial.Serial(display_module_port, 9600, timeout=.1)
+    display_arduino = serial.Serial(display_module_port, 9600, timeout=0.1)
     sound_arduino = serial.Serial(sound_module_port, 9600, timeout=.1)
     light_arduino = serial.Serial(light_module_port, 9600, timeout=.1)
     keypad_arduino = serial.Serial(keypad_module_port, 9600, timeout=.1)
     arduinos = {"display": display_arduino, "sound": sound_arduino, "light": light_arduino, "keypad": keypad_arduino}
-    time.sleep(1)
-    display_arduino.write("Welcome to drift")
-    grab_alarms(arduinos)
+    time.sleep(2)
+
+    display_arduino.write(b"#0;0;Welcome to drift;\n")
+    #grab_alarms(arduinos)
     while 1:
         schedule.run_pending()
         time.sleep(1)

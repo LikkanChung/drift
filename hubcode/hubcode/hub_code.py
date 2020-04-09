@@ -34,23 +34,28 @@ def grab_alarms(arduinos):
     alarms = []
     print("I have no idea what the JSON for this looks like")
     # TODO:GET TIMES FROM JSON
+    #TODO:ALSO MOVE THE EVENT FORWARD 5 minutes
     for alarm in alarms:
         schedule.every().day.at(alarm.time).do(alarm_once, arduinos)
     schedule.every().hour.at.do(grab_alarms, arduinos)
 
+def shutdown_once(arduinos):
+    shutdown(arduinos)
+    return schedule.Cancel_Job
+
+def shutdown(arduinos):
+    arduinos["light"].write("#0;-1;\n")
+    arduinos["sound"].write("#0:-1;\n")
+    print("shutdown modules")
 
 def alarm_once(arduinos):
     alarm(arduinos)
-    return schedule.cancel_job()
+    return schedule.Cancel_Job
 
 
 def alarm(arduinos):
-    arduinos["light"].write("#1;20;\n")
-    arduinos["sound"].write("#1:20;\n")
-    time.sleep(30)
-    arduinos["light"].write("#0;-1;\n")
-    arduinos["sound"].write("#0:-1;\n")
-    # TODO:SEND ALARMS TO MODULES
+    arduinos["light"].write("#1;300;\n")
+    arduinos["sound"].write("#300:1;\n")
     print("send an alarm to the modules")
 
 def main(argv):

@@ -13,7 +13,7 @@ from backend_connection import fetch
 #deactivate afterwards
 
 
-arduinos_connected = False
+arduinos_connected = True
 
 display_module_port = '/dev/ttyUSB1'
 keypad_module_port = '/dev/ttyUSB3'

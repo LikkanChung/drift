@@ -2,6 +2,7 @@ import dateutil.parser
 from dateutil.parser import *
 from dateutil.tz import *
 from datetime import datetime
+import pytz
 import time
 
 
@@ -26,6 +27,7 @@ def main():
     #print(now)
     #print(passed)
     print(61 % 60)
+    print(datetime.utcnow().replace(tzinfo=pytz.utc))
 
 
 if __name__ == "__main__":

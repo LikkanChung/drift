@@ -3,6 +3,8 @@ import sys
 import time
 import schedule
 from datetime import datetime
+import dateutil.parser
+import pytz
 from backend_connection import fetch
 
 #The hub should
@@ -35,8 +37,12 @@ def grab_alarms(arduinos, token, received):
     schedule.clear()
     alarms, token, received = fetch(TEST_URL, TEST_USERNAME, TEST_PASSWORD, token, received)
     print("fetched")
+    alarm_times = []
     # GET ALARM TIMES
     for alarm in alarms:
+        alarm_time = dateutil.parser.parse(alarm["time"])
+        if alarm_time > datetime.utcnow().replace(tzinfo=pytz.utc):
+            alarm_times.append(alarm_time)
         shutdown_hour = alarm["time"][11:13]
         shutdown_minute = alarm["time"][14:16]
         minute = int(int(shutdown_minute) - (EARLY_START/60))
@@ -53,12 +59,11 @@ def grab_alarms(arduinos, token, received):
         if(hour < 10):
             start_hour = "0" + start_hour
         schedule.every().day.at(start_hour + ":" + start_minute).do(alarm_once, arduinos)
-        #schedule.every().day.at(shutdown_hour + ":" + shutdown_minute).do(shutdown_once, arduinos)
         print("alarm at " + str(shutdown_hour) + ":" + str(shutdown_minute) + ":00")
         print("alarm starting at " + str(start_hour) + ":" + str(start_minute) + ":00")
-        if arduinos_connected:
-            alarm_notification = "Alarm at " + shutdown_hour + ":" + shutdown_minute + "  "
-            arduinos["display"].write(b"#0;0;" + alarm_notification.encode() +b";\n")
+    if arduinos_connected:
+        alarm_notification = "Alarm at " + datetime_from_utc_to_local(min(alarm_times)).strftime("%H:%M") + "  "
+        arduinos["display"].write(b"#0;0;" + alarm_notification.encode() + b";\n")
     schedule.every().minute.at(":17").do(grab_alarms, arduinos, token, received)
 
 def shutdown_once(arduinos):
@@ -81,6 +86,12 @@ def alarm(arduinos):
         arduinos["light"].write(b"#0;" + str(EARLY_START).encode() + b";\n")
         arduinos["sound"].write(b"#0;" + str(EARLY_START).encode() + b";\n")
     print("send an alarm to the modules")
+
+
+def datetime_from_utc_to_local(utc_datetime):
+    now_timestamp = time.time()
+    offset = datetime.fromtimestamp(now_timestamp) - datetime.utcfromtimestamp(now_timestamp)
+    return utc_datetime + offset
 
 def main(argv):
     print("Attempting connection")

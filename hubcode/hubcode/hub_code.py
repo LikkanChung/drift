@@ -53,7 +53,7 @@ def grab_alarms(arduinos, token, received):
             start_minute = "0" + start_minute
         if(hour < 10):
             start_hour = "0" + start_hour
-        schedule.every().day.at(shutdown_hour + ":" + shutdown_minute).do(alarm_once, arduinos)
+        schedule.every().day.at(start_hour + ":" + start_minute).do(alarm_once, arduinos)
         #schedule.every().day.at(shutdown_hour + ":" + shutdown_minute).do(shutdown_once, arduinos)
         print("alarm entered at " + str(start_hour) + ":" + str(start_minute))
         if arduinos_connected:

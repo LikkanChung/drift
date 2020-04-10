@@ -1,13 +1,13 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE resources [
-    <!ENTITY appname "Drift">
-    <!ENTITY help_url_prefix "https://jackcorsi.dev/sleepy">
-    <!ENTITY help_url_explain_relog "/explainrelog.php">
-    <!ENTITY api_url_prefix "http://192.168.0.103:3333">
-    ]>
+<?xml version="1.0" encoding="utf-8"?><!DOCTYPE resources
+    [<!ENTITY appname "Drift"><!ENTITY help_url_prefix "https://jackcorsi.dev/sleepy"><!ENTITY help_url_explain_relog "/explainrelog.php"><!ENTITY api_url_prefix "http://192.168.0.183:3333">
+
+        ]>
 
 <resources>
     <string name="api_url_login">&api_url_prefix;/login</string>
+    <string name="api_url_alarms">&api_url_prefix;/alarms</string>
+ndroid:usesCleartextTraff
+    <string name="api_request_header_login_token">X-Auth-Token</string>
 
     <string name="spref_file_name">pref</string>
     <string name="spref_uid">uid</string>
@@ -25,6 +25,10 @@
     <string name="alarm_heading">Your alarms</string>
 
     <string name="action_login">Sign in</string>
+    <string name="action_affirm">Yes</string>
+    <string name="action_reject">No</string>
+    <string name="action_try_again">Try Again</string>
+    <string name="action_finish">Finish</string>
 
     <string name="error_generic">
         Ouch, something went wrong, and we\'re not sure exactly what. If this keeps happening,
@@ -51,6 +55,44 @@
         please let our team know so we can fix it.
     </string>
 
+    <string name="action_next">Next</string>
+    <string name="action_cancel">Cancel</string>
+
+    <string name="pairing_title">Pair a Hub with your &appname; account</string>
+    <string name="pairing_overview_explanation">
+        We\'ll generate a temporary code that you\'ll be able to enter on your new &appname; Hub
+        to connect it to your account.
+    </string>
+    <string name="action_generate_pairing_code">Generate Code</string>
+    <string name="pairing_stage1_instruction">
+        Enter this code on your Hub to pair it.
+    </string>
+    <string name="pairing_stage2_instruction">
+        A new code should now appear on your Hub\'s display.
+        Check that it matches this one exactly.
+    </string>
+    <string name="pairing_sample_code">NOPE</string>
+    <string name="pairing_expire_explanation">
+        For security, you\'ll need to complete the process within
+    </string>
+    <string name="pairing_user_response_codes_match">Yes, they\'re the same</string>
+    <string name="pairing_user_response_codes_dont_match">No, they\'re different</string>
+    <string name="pairing_failure_message">
+        Looks like something went wrong with pairing. Try again?
+    </string>
+    <string name="pairing_success_message">
+        Success! Your hub should now be able to access your account. If not, try doing this process
+        again.
+    </string>
+
+    <string name="sample_time_quantity">37 minutes</string>
+
     <string name="hint_username_field">Username or Email</string>
     <string name="hint_password_field">Password</string>
+
+    <string name="sample_time">04:20</string>
+    <string name="sample_date">1st September, 2021</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

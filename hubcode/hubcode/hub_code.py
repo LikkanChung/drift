@@ -57,7 +57,7 @@ def grab_alarms(arduinos, token, received):
         #schedule.every().day.at(shutdown_hour + ":" + shutdown_minute).do(shutdown_once, arduinos)
         print("alarm entered at " + str(start_hour) + ":" + str(start_minute))
         if arduinos_connected:
-            alarm_notification = "Alarm at " + str(hour) + ":" + str(minute) + "  "
+            alarm_notification = "Alarm at " + str(hour)[:2] + ":" + str(minute)[:2] + "  "
             arduinos["display"].write(b"#0;0;" + alarm_notification.encode() +b";\n")
     schedule.every().minute.at(":17").do(grab_alarms, arduinos, token, received)
 

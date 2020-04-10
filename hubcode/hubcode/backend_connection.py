@@ -15,11 +15,11 @@ def fetch(server_address, username, password, token, received):
     rerequest_time = datetime.now()
     time_gap = rerequest_time - received
     if time_gap.total_seconds() > TIME_OUT_SECONDS:
-        login_resp = requests.post("http://77.97.250.202:3333/login", json={"username":"max", "password":"12345678"})
+        login_resp = requests.post("http://77.97.250.202:3333/login", json={"username":TEST_USERNAME, "password":TEST_PASSWORD})
         login_json = login_resp.json()
         token = login_json["token"]
         received = rerequest_time
-    #Fetch alarms
+    #Fetch alarms=
     parameters = {'X-Auth-Token':token}
     alarms_resp = requests.get("http://77.97.250.202:3333/alarms", headers = parameters)
     print(alarms_resp.json())

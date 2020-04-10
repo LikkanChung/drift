@@ -1,7 +1,6 @@
 import serial
 import sys
 import time
-import json
 import schedule
 from datetime import datetime
 from backend_connection import fetch
@@ -13,7 +12,7 @@ from backend_connection import fetch
 #deactivate afterwards
 
 
-arduinos_connected = True
+arduinos_connected = False
 
 display_module_port = '/dev/ttyUSB1'
 keypad_module_port = '/dev/ttyUSB0'
@@ -55,7 +54,7 @@ def grab_alarms(arduinos, token, received):
             start_hour = "0" + start_hour
         schedule.every().day.at(start_hour + ":" + start_minute).do(alarm_once, arduinos)
         #schedule.every().day.at(shutdown_hour + ":" + shutdown_minute).do(shutdown_once, arduinos)
-        print("alarm entered at " + str(start_hour) + ":" + str(start_minute))
+        print("alarm entered at " + str(shutdown_hour) + ":" + str(shutdown_minute))
         if arduinos_connected:
             alarm_notification = "Alarm at " + str(hour) + ":" + str(minute) + "  "
             arduinos["display"].write(b"#0;0;" + alarm_notification.encode() +b";\n")
@@ -77,7 +76,6 @@ def alarm_once(arduinos):
 
 def alarm(arduinos):
     print("An alarm is going off")
-    print("Success")
     if(arduinos_connected):
         arduinos["light"].write(b"#0;" + EARLY_START + b";\n")
         arduinos["sound"].write(b"#" + EARLY_START + b";0;\n")

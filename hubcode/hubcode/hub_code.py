@@ -4,7 +4,6 @@ import time
 import json
 import schedule
 from datetime import datetime
-
 from backend_connection import fetch
 
 #The hub should
@@ -14,7 +13,7 @@ from backend_connection import fetch
 #deactivate afterwards
 
 
-arduinos_connected = True
+arduinos_connected = False
 
 display_module_port = '/dev/ttyUSB1'
 keypad_module_port = '/dev/ttyUSB3'
@@ -37,10 +36,23 @@ def grab_alarms(arduinos, token, received):
     print("fetched")
     # GET ALARM TIMES
     for alarm in alarms:
-        hour = alarm["time"][11:13]
-        minute = alarm["time"][14:16]
-        print(hour + ":" + minute)
-        schedule.every().day.at(hour + ":" + minute).do(alarm_once, arduinos)
+        shutdown_hour = alarm["time"][11:13]
+        shutdown_minute = alarm["time"][14:16]
+        minute = int(shutdown_minute) - 2
+        hour = int(shutdown_hour)
+        if minute < 0:
+            minute += 60
+            hour = hour - 1
+            if hour < 1:
+                hour += 24
+        start_minute = str(minute)
+        start_hour = str(hour)
+        if(minute<10):
+            start_minute = "0" + start_minute
+        if(hour < 10):
+            start_hour = "0" + start_hour
+        schedule.every().day.at(start_hour + ":" + start_minute).do(alarm_once, arduinos)
+        schedule.every().day.at(shutdown_hour + ":" + shutdown_minute).do(shutdown_once, arduinos)
         print("alarm entered")
         if arduinos_connected:
             alarm_notification = "Alarm at " + hour + ":" + minute + "  "
@@ -65,8 +77,8 @@ def alarm(arduinos):
     print("An alarm is going off")
     print("Success")
     if(arduinos_connected):
-        arduinos["light"].write(b"#10;10;\n")
-        arduinos["sound"].write(b"#10;10;\n")
+        arduinos["light"].write(b"#20;100;\n")
+        arduinos["sound"].write(b"#20;100;\n")
     print("send an alarm to the modules")
 
 def main(argv):

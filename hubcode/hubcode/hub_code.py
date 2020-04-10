@@ -79,8 +79,8 @@ def alarm(arduinos):
     print("An alarm is going off")
     print("Success")
     if(arduinos_connected):
-        arduinos["light"].write(b"#20;" + (EARLY_START-20) + b";\n")
-        arduinos["sound"].write(b"#" + (EARLY_START-20) + b";20;\n")
+        arduinos["light"].write(b"#0;" + EARLY_START + b";\n")
+        arduinos["sound"].write(b"#" + EARLY_START + b";0;\n")
     print("send an alarm to the modules")
 
 def main(argv):

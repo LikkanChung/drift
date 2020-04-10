@@ -67,6 +67,8 @@
         android:linksClickable="true"
         android:text="@string/login_relog_explanation"
         android:textAlignment="center"
+        android:textColor="@color/colorText"
+        android:textColorHint="@color/colorText"
         android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@+id/text_username"
         app:layout_constraintEnd_toEndOf="@+id/text_username"

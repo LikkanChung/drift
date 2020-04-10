@@ -79,8 +79,8 @@ def alarm(arduinos):
     print("An alarm is going off")
     print("Success")
     if(arduinos_connected):
-        arduinos["light"].write(b"#0;" + EARLY_START + b";\n")
-        arduinos["sound"].write(b"#" + EARLY_START + b";0;\n")
+        arduinos["light"].write(b"#0;" + str(EARLY_START).encode() + b";\n")
+        arduinos["sound"].write(b"#" + str(EARLY_START).encode() + b";0;\n")
     print("send an alarm to the modules")
 
 def main(argv):
@@ -111,7 +111,6 @@ def main(argv):
             keypad_arduino.write(b"#key;\n")
             keys = str(keypad_arduino.readline())
             if 'C' in keys:
-                print("CANCEL")
                 light_arduino.write(b"#0;-1;\n")
                 sound_arduino.write(b"#0;-1;\n")
         now = datetime.now()

@@ -11,6 +11,8 @@
         android:id="@+id/alarms_recycler"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="@color/colorBackground"
         app:layoutManager="LinearLayoutManager"
-        tools:listitem="@layout/alarms_recycler_item"/>
+        tools:listitem="@layout/alarms_recycler_item" />
+
 </FrameLayout>

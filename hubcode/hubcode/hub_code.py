@@ -80,7 +80,7 @@ def alarm(arduinos):
     print("Success")
     if(arduinos_connected):
         arduinos["light"].write(b"#0;" + str(EARLY_START).encode() + b";\n")
-        arduinos["sound"].write(b"#" + str(EARLY_START).encode() + b";0;\n")
+        arduinos["sound"].write(b"#0;" + str(EARLY_START).encode() + b";\n")
     print("send an alarm to the modules")
 
 def main(argv):

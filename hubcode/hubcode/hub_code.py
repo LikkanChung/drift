@@ -40,7 +40,7 @@ def grab_alarms(arduinos, token, received):
     for alarm in alarms:
         shutdown_hour = alarm["time"][11:13]
         shutdown_minute = alarm["time"][14:16]
-        minute = int(shutdown_minute) - (EARLY_START/60)
+        minute = int(int(shutdown_minute) - (EARLY_START/60))
         hour = int(shutdown_hour)
         if minute < 0:
             minute += 60

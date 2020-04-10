@@ -56,7 +56,7 @@ def grab_alarms(arduinos, token, received):
         #schedule.every().day.at(shutdown_hour + ":" + shutdown_minute).do(shutdown_once, arduinos)
         print("alarm entered at " + str(shutdown_hour) + ":" + str(shutdown_minute))
         if arduinos_connected:
-            alarm_notification = "Alarm at " + str(hour) + ":" + str(minute) + "  "
+            alarm_notification = "Alarm at " + str(hour)[:2] + ":" + str(minute)[:2] + "  "
             arduinos["display"].write(b"#0;0;" + alarm_notification.encode() +b";\n")
     schedule.every().minute.at(":17").do(grab_alarms, arduinos, token, received)
 
@@ -77,8 +77,8 @@ def alarm_once(arduinos):
 def alarm(arduinos):
     print("An alarm is going off")
     if(arduinos_connected):
-        arduinos["light"].write(b"#0;" + EARLY_START + b";\n")
-        arduinos["sound"].write(b"#" + EARLY_START + b";0;\n")
+        arduinos["light"].write(b"#0;" + str(EARLY_START).encode() + b";\n")
+        arduinos["sound"].write(b"#0;" + str(EARLY_START).encode() + b";\n")
     print("send an alarm to the modules")
 
 def main(argv):
@@ -107,10 +107,10 @@ def main(argv):
             keypad_arduino.write(b"#time;\n")
             t = keypad_arduino.readline()
             keypad_arduino.write(b"#key;\n")
-            keys = keypad_arduino.readline()
-            if "C" in keys:
-                arduinos["light"].write(b"#0;-1;\n")
-                arduinos["sound"].write(b"#0;-1;\n")
+            keys = str(keypad_arduino.readline())
+            if 'C' in keys:
+                light_arduino.write(b"#0;-1;\n")
+                sound_arduino.write(b"#0;-1;\n")
         now = datetime.now()
         now.strftime("%d/%m, %H:%M:%S")
         if arduinos_connected:

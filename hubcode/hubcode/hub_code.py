@@ -20,10 +20,12 @@ keypad_module_port = '/dev/ttyUSB0'
 light_module_port = '/dev/ttyUSB2'
 sound_module_port = '/dev/ttyUSB3'
 
-
 TEST_USERNAME = "jack"
 TEST_PASSWORD =  "21ysxqkcl1i3c3h8ou7l"
 TEST_URL = "http://77.97.250.202"
+
+EARLY_START = 120
+
 display_arduino = None
 sound_arduino = None
 light_arduino = None
@@ -38,7 +40,7 @@ def grab_alarms(arduinos, token, received):
     for alarm in alarms:
         shutdown_hour = alarm["time"][11:13]
         shutdown_minute = alarm["time"][14:16]
-        minute = int(shutdown_minute) - 2
+        minute = int(shutdown_minute) - (EARLY_START/60)
         hour = int(shutdown_hour)
         if minute < 0:
             minute += 60
@@ -77,8 +79,8 @@ def alarm(arduinos):
     print("An alarm is going off")
     print("Success")
     if(arduinos_connected):
-        arduinos["light"].write(b"#20;100;\n")
-        arduinos["sound"].write(b"#20;100;\n")
+        arduinos["light"].write(b"#0;" + EARLY_START + b";\n")
+        arduinos["sound"].write(b"#" + EARLY_START + b";0;\n")
     print("send an alarm to the modules")
 
 def main(argv):

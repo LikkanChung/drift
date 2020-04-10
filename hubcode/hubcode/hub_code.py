@@ -51,8 +51,8 @@ def grab_alarms(arduinos, token, received):
             start_minute = "0" + start_minute
         if(hour < 10):
             start_hour = "0" + start_hour
-        schedule.every().day.at(start_hour + ":" + start_minute).do(alarm_once, arduinos)
-        schedule.every().day.at(shutdown_hour + ":" + shutdown_minute).do(shutdown_once, arduinos)
+        schedule.every().day.at(shutdown_hour + ":" + shutdown_minute).do(alarm_once, arduinos)
+        #schedule.every().day.at(shutdown_hour + ":" + shutdown_minute).do(shutdown_once, arduinos)
         print("alarm entered")
         if arduinos_connected:
             alarm_notification = "Alarm at " + hour + ":" + minute + "  "
@@ -106,6 +106,11 @@ def main(argv):
         if arduinos_connected:
             keypad_arduino.write(b"#time;\n")
             t = keypad_arduino.readline()
+            keypad_arduino.write(b"#key;\n")
+            keys = keypad_arduino.readline()
+            if "C" in keys:
+                arduinos["light"].write(b"#0;-1;\n")
+                arduinos["sound"].write(b"#0;-1;\n")
         now = datetime.now()
         now.strftime("%d/%m, %H:%M:%S")
         if arduinos_connected:

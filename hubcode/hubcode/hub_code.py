@@ -14,7 +14,7 @@ from backend_connection import fetch
 #deactivate afterwards
 
 
-arduinos_connected = False
+arduinos_connected = True
 
 display_module_port = '/dev/ttyUSB1'
 keypad_module_port = '/dev/ttyUSB0'
@@ -25,7 +25,7 @@ TEST_USERNAME = "jack"
 TEST_PASSWORD =  "21ysxqkcl1i3c3h8ou7l"
 TEST_URL = "http://77.97.250.202"
 
-EARLY_START = 120
+EARLY_START = 60
 
 display_arduino = None
 sound_arduino = None

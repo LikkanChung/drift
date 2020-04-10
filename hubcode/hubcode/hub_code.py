@@ -20,10 +20,12 @@ keypad_module_port = '/dev/ttyUSB0'
 light_module_port = '/dev/ttyUSB2'
 sound_module_port = '/dev/ttyUSB3'
 
-
 TEST_USERNAME = "jack"
 TEST_PASSWORD =  "21ysxqkcl1i3c3h8ou7l"
 TEST_URL = "http://77.97.250.202"
+
+EARLY_START = 120
+
 display_arduino = None
 sound_arduino = None
 light_arduino = None
@@ -38,7 +40,7 @@ def grab_alarms(arduinos, token, received):
     for alarm in alarms:
         shutdown_hour = alarm["time"][11:13]
         shutdown_minute = alarm["time"][14:16]
-        minute = int(shutdown_minute) - 2
+        minute = int(shutdown_minute) - (EARLY_START/60)
         hour = int(shutdown_hour)
         if minute < 0:
             minute += 60
@@ -51,15 +53,9 @@ def grab_alarms(arduinos, token, received):
             start_minute = "0" + start_minute
         if(hour < 10):
             start_hour = "0" + start_hour
-<<<<<<< HEAD
-        schedule.every().day.at(start_hour + ":" + start_minute).do(alarm_once, arduinos)
-        schedule.every().day.at(shutdown_hour + ":" + shutdown_minute).do(shutdown_once, arduinos)
-        print("alarm entered at " + str(start_hour) + ":" + str(start_minute))
-=======
         schedule.every().day.at(shutdown_hour + ":" + shutdown_minute).do(alarm_once, arduinos)
         #schedule.every().day.at(shutdown_hour + ":" + shutdown_minute).do(shutdown_once, arduinos)
-        print("alarm entered")
->>>>>>> ce61ea8962fe4e11655cb66ed8135d5064a2a4eb
+        print("alarm entered at " + str(start_hour) + ":" + str(start_minute))
         if arduinos_connected:
             alarm_notification = "Alarm at " + str(hour) + ":" + str(minute) + "  "
             arduinos["display"].write(b"#0;0;" + alarm_notification.encode() +b";\n")
@@ -83,8 +79,8 @@ def alarm(arduinos):
     print("An alarm is going off")
     print("Success")
     if(arduinos_connected):
-        arduinos["light"].write(b"#20;100;\n")
-        arduinos["sound"].write(b"#20;100;\n")
+        arduinos["light"].write(b"#20;" + (EARLY_START-20) + b";\n")
+        arduinos["sound"].write(b"#" + (EARLY_START-20) + b";20;\n")
     print("send an alarm to the modules")
 
 def main(argv):

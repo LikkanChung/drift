@@ -67,7 +67,7 @@ public class LoginEndpoint extends Endpoint {
             case SUCCESS:
                 JSONObject response = new JSONObject();
                 response.put("uid", result.getUid());
-                response.put("token", result.getToken());
+                response.put("token", result.getTokenAsString());
                 response.put("begins", result.begins());
                 response.put("expires", result.expires());
                 writeResponse(exchange, response.toString(), HttpsURLConnection.HTTP_CREATED);

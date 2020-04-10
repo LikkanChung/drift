@@ -68,6 +68,12 @@ public abstract class Endpoint implements HttpHandler {
                     implemented = options(ex, userAuth, params);
                     break;
             }
+        } catch (JSONException e) {
+            System.err.println("JSONException in request handler");
+            e.printStackTrace();
+            ex.sendResponseHeaders(HttpsURLConnection.HTTP_INTERNAL_ERROR, 0);
+            ex.close();
+            return;
         } catch (IOException e) {
             System.err.println("IOException in request handler");
             e.printStackTrace();
@@ -76,12 +82,6 @@ public abstract class Endpoint implements HttpHandler {
             return;
         } catch (SQLException e) {
             System.err.println("SQLException in request handler");
-            e.printStackTrace();
-            ex.sendResponseHeaders(HttpsURLConnection.HTTP_INTERNAL_ERROR, 0);
-            ex.close();
-            return;
-        } catch (JSONException e) {
-            System.err.println("JSONException in request handler");
             e.printStackTrace();
             ex.sendResponseHeaders(HttpsURLConnection.HTTP_INTERNAL_ERROR, 0);
             ex.close();
@@ -166,7 +166,8 @@ public abstract class Endpoint implements HttpHandler {
         return new Endpoint[] {
                 new SleepyokEndpoint(),
                 new AlarmsEndpoint(dbConn),
-                new LoginEndpoint()
+                new LoginEndpoint(),
+                new PairEndpoint(dbConn)
         };
     }
 

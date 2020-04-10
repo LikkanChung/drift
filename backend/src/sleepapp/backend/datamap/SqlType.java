@@ -6,7 +6,8 @@ public enum SqlType {
     INTEGER,
     LONG,
     STRING,
-    TIMESTAMP;
+    TIMESTAMP,
+    BYTEA;
 
     public boolean checkJavaType(Object obj) {
         return getJavaType().isInstance(obj);
@@ -22,6 +23,8 @@ public enum SqlType {
                 return String.class;
             case TIMESTAMP:
                 return Instant.class;
+            case BYTEA:
+                return byte[].class;
             default:
                 throw new RuntimeException("Umm what");
         }

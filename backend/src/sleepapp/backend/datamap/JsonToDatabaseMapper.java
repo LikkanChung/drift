@@ -11,6 +11,9 @@ public class JsonToDatabaseMapper {
 
     public static final String VALIDATION_OK = null;
 
+    private static Base64.Encoder base64Encoder = Base64.getEncoder();
+    private static Base64.Decoder base64Decoder = Base64.getDecoder();
+
     private static class WritableColumn {
         protected SqlType type;
         protected ValidationPolicy<?> validationPolicy;
@@ -57,6 +60,7 @@ public class JsonToDatabaseMapper {
         VALIDATION_POLICY,
         UNKNOWN_JSON_KEY,
         JSON_VALUE_EXPECTED,
+        AUTH_KEY,
         TOO_MUCH_JSON;
 
         public boolean bad() {
@@ -107,6 +111,8 @@ public class JsonToDatabaseMapper {
                 return "Unrecognised key: '" + errorColumn + "'";
             case JSON_VALUE_EXPECTED:
                 return "Expected a value for key '" + errorColumn + "' - value not found or couldn't be converted";
+            case AUTH_KEY:
+                return "Access denied for this record";
             case TOO_MUCH_JSON:
                 return "Request complexity / length limits exceeded";
             default:
@@ -114,7 +120,31 @@ public class JsonToDatabaseMapper {
         }
     }
 
+    public JSONObject fetch(JSONObject json) {
+        return fetch(json, null);
+    }
+
+    public JSONObject fetch(JSONObject json, Object authKeyValue) {
+        Object primaryKeyVal = json.opt(primaryKeyColumn);
+        if (primaryKeyVal == null) {
+            setErrorState(Flag.JSON_VALUE_EXPECTED, null, primaryKeyColumn);
+            return null;
+        }
+        if (!primaryKeyType.checkJavaType(primaryKeyVal)) {
+            setErrorState(Flag.VALUE_PARSE_FAILED, null, primaryKeyColumn);
+            return null;
+        }
+
+        return fetch(primaryKeyVal, authKeyValue);
+    }
+
     public JSONObject fetch(Object primaryKeyValue) {
+        return fetch(primaryKeyValue, null);
+    }
+
+    public JSONObject fetch(Object primaryKeyValue, Object authKeyValue) {
+        if (authKeyValue != null)
+            matchingOrThrowIllegalArg(authKeyValue, authKeyType);
         flag = Flag.OK;
 
         matchingOrThrowIllegalArg(primaryKeyValue, primaryKeyType);
@@ -127,7 +157,7 @@ public class JsonToDatabaseMapper {
                 tableName
         );
         stmtString.append(
-                "WHERE "
+                " WHERE "
         );
         stmtString.append(
                 primaryKeyColumn
@@ -145,31 +175,47 @@ public class JsonToDatabaseMapper {
                 return null;
             }
 
-            return fromResultSetRow(rs);
+            return fromResultSetRow(rs, authKeyValue);
         } catch (SQLException e) {
             e.printStackTrace();
+            System.err.println("The query I sent was: ");
+            System.err.println(stmtString);
             flag = Flag.INTERNAL_ERROR;
             return null;
         }
     }
 
-    public JSONObject fromResultSetRow(ResultSet rs) {
+    public JSONObject fromResultSetRow(ResultSet rs) throws SQLException {
+        return fromResultSetRow(rs, null);
+    }
+
+    public JSONObject fromResultSetRow(ResultSet rs, Object authKeyVal) throws SQLException {
         flag = Flag.OK;
         JSONObject json = new JSONObject();
+
+        if (authKeyVal != null) {
+            matchingOrThrowIllegalArg(authKeyVal, authKeyType);
+            Object val = fetch(rs, authKeyColumn, authKeyType);
+            if (!authKeyVal.equals(val)) {
+                setErrorState(Flag.AUTH_KEY, null, authKeyColumn);
+                return null;
+            }
+            putJson(json, authKeyColumn, authKeyVal, authKeyType);
+        }
 
         try {
             for (Map.Entry<String, WritableColumn> e : wColumns.entrySet()) {
                 String name = e.getKey();
                 WritableColumn col = e.getValue();
                 Object val = fetch(rs, name, col.type);
-                json.put(name, val);
+                putJson(json, name, val, col.type);
             }
 
             for (Map.Entry<String, SqlType> e : rColumns.entrySet()) {
                 String name = e.getKey();
                 SqlType type = e.getValue();
                 Object val = fetch(rs, name, type);
-                json.put(name, val);
+                putJson(json, name, val, type);
             }
 
         } catch (SQLException e) {
@@ -207,7 +253,8 @@ public class JsonToDatabaseMapper {
     }
 
     public Flag create(JSONObject json, Object authKeyVal) {
-        matchingOrThrowIllegalArg(authKeyVal, authKeyType);
+        if (authKeyVal != null)
+            matchingOrThrowIllegalArg(authKeyVal, authKeyType);
 
         if (isTooMuchJson(json))
             return flag;
@@ -451,6 +498,8 @@ public class JsonToDatabaseMapper {
                 return ((ValidationPolicy<String>) vp).evaluate((String) val);
             case TIMESTAMP:
                 return ((ValidationPolicy<Instant>) vp).evaluate((Instant) val);
+            case BYTEA:
+                return ((ValidationPolicy<byte[]>) vp).evaluate((byte[]) val);
             default:
                 throw new RuntimeException("umm what");
         }
@@ -499,6 +548,22 @@ public class JsonToDatabaseMapper {
                 }
 
                 return Optional.of(time);
+            case BYTEA:
+                String base64 = json.optString(key, null);
+                if (base64 == null) {
+                    setErrorState(Flag.VALUE_PARSE_FAILED, null, key);
+                    return Optional.empty();
+                }
+
+                byte[] bytea;
+                try {
+                    bytea = base64Decoder.decode(base64);
+                } catch (IllegalArgumentException e) {
+                    setErrorState(Flag.VALUE_PARSE_FAILED, null, key);
+                    return Optional.empty();
+                }
+
+                return Optional.of(bytea);
             default:
                 throw new RuntimeException("Umm what");
         }
@@ -524,6 +589,10 @@ public class JsonToDatabaseMapper {
                 Instant instant = (Instant) value;
                 stmt.setTimestamp(index, Timestamp.from(instant));
                 break;
+            case BYTEA:
+                byte[] bytea = (byte[]) value;
+                stmt.setBytes(index, bytea);
+                break;
             default:
                 throw new RuntimeException("umm what");
         }
@@ -538,9 +607,29 @@ public class JsonToDatabaseMapper {
             case STRING:
                 return rs.getString(col);
             case TIMESTAMP:
-                return Instant.ofEpochMilli(rs.getTimestamp(col).getTime());
+                Timestamp ts = rs.getTimestamp(col);
+                if (ts != null)
+                    return Instant.ofEpochMilli(ts.getTime());
+                else
+                    return null;
+            case BYTEA:
+                return rs.getBytes(col);
             default:
                 throw new RuntimeException("Umm what");
+        }
+    }
+
+    private void putJson(JSONObject json, String key, Object value, SqlType type) {
+        if (value != null) {
+            matchingOrThrowIllegalArg(value, type);
+
+            switch (type) {
+                case BYTEA:
+                    json.put(key, base64Encoder.encodeToString((byte[]) value));
+                    break;
+                default:
+                    json.put(key, value);
+            }
         }
     }
 
@@ -598,6 +687,10 @@ public class JsonToDatabaseMapper {
 
     public void defineReadOnlyTimestampColumn(String columnName) {
         rColumns.put(columnName, SqlType.TIMESTAMP);
+    }
+
+    public void defineReadOnlyByteaColumn(String columnName) {
+        rColumns.put(columnName, SqlType.BYTEA);
     }
     /*
     mapper.defineWriteableTimestampColumn("time", (Instant value) -> {

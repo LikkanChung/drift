@@ -1,6 +1,6 @@
-/*Database that the backend runs on?*/
+/*Database that the backend runs on*/
 
-DROP TABLE IF EXISTS users, alarms, authenticated_clients;
+DROP TABLE IF EXISTS users, alarms, authenticated_clients, pairing_transactions;
 
 CREATE TABLE users (
 	uid BIGSERIAL,
@@ -31,4 +31,20 @@ CREATE TABLE authenticated_clients (
   CHECK (octet_length(token) = 64),
   UNIQUE(token),
   CHECK (expire > NOW())
+);
+
+CREATE TABLE pairing_transactions (
+    syn_code CHAR(4),
+    uid BIGSERIAL,
+    access_level INTEGER,
+    ack_code CHAR(4) DEFAULT NULL,
+    expire TIMESTAMP WITH TIME ZONE,
+    auth_token BYTEA DEFAULT NULL,
+    token_expire TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+
+    PRIMARY KEY(syn_code),
+    FOREIGN KEY (uid) REFERENCES users(uid) ON DELETE CASCADE,
+    CHECK (access_level NOTNULL AND access_level > -2),
+    CHECK (expire > NOW()),
+    CHECK (token_expire IS NULL OR token_expire > NOW())
 );

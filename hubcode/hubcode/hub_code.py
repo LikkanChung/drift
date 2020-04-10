@@ -16,9 +16,9 @@ from backend_connection import fetch
 arduinos_connected = True
 
 display_module_port = '/dev/ttyUSB1'
-keypad_module_port = '/dev/ttyUSB3'
+keypad_module_port = '/dev/ttyUSB0'
 light_module_port = '/dev/ttyUSB2'
-sound_module_port = '/dev/ttyUSB5'
+sound_module_port = '/dev/ttyUSB3'
 
 
 TEST_USERNAME = "jack"
@@ -55,7 +55,7 @@ def grab_alarms(arduinos, token, received):
         #schedule.every().day.at(shutdown_hour + ":" + shutdown_minute).do(shutdown_once, arduinos)
         print("alarm entered")
         if arduinos_connected:
-            alarm_notification = "Alarm at " + hour + ":" + minute + "  "
+            alarm_notification = "Alarm at " + str(hour) + ":" + str(minute) + "  "
             arduinos["display"].write(b"#0;0;" + alarm_notification.encode() +b";\n")
     schedule.every().minute.at(":17").do(grab_alarms, arduinos, token, received)
 

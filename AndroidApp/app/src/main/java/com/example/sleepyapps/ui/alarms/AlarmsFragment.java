@@ -124,7 +124,7 @@ public class AlarmsFragment extends Fragment {
         outState.putString(BUNDLE_SAVED_JSON, data.toString());
     }
 
-    public void onJsonDataReady() {
+    private void onJsonDataReady() {
         Log.d(LOG_TAG, "onJsonDataReady, array size=" + data.length());
         AlarmsRecyclerAdapter newAdapter =
                 new AlarmsRecyclerAdapter(data, this);
@@ -134,7 +134,7 @@ public class AlarmsFragment extends Fragment {
         else
             recycler.swapAdapter(newAdapter, false);
 
-        newAdapter.notifyDataSetChanged();
+        //newAdapter.notifyDataSetChanged();
     }
 
     private final Response.Listener<JSONArray> onRequestSuccess = (JSONArray array) -> {
@@ -159,7 +159,13 @@ public class AlarmsFragment extends Fragment {
                     fetchData();
                 },
                 (VolleyError error) -> {
-                    Log.e(LOG_TAG, "updateTime request failed: " + error.getMessage());
+                    if (error.networkResponse != null) {
+                        Log.d(LOG_TAG, "Response from server: "
+                                + StandardCharsets.UTF_8.decode(
+                                        ByteBuffer.wrap(error.networkResponse.data)));
+                    } else {
+                        Log.e(LOG_TAG, "updateTime request failed: " + error.getMessage());
+                    }
                     fetchData();
                 }) {
             @Override
@@ -179,7 +185,16 @@ public class AlarmsFragment extends Fragment {
                     return super.getBody();
                 }
             }
+
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                headers.put(getString(R.string.api_request_header_login_token),
+                        spref.getString(getString(R.string.spref_login_token), null));
+                return headers;
+            }
         };
+        rq.add(request);
     }
 
     private class TimeModificationListener implements TimePickerDialog.OnTimeSetListener {
@@ -206,7 +221,7 @@ public class AlarmsFragment extends Fragment {
             Instant curTime = Instant.parse(alarm.optString("time"));
             ZonedDateTime curTimeLocal = curTime.atZone(TimeZone.getDefault().toZoneId());
             Instant newTime = curTimeLocal.withYear(year)
-                    .withMonth(month).withDayOfMonth(dayOfMonth).toInstant();
+                    .withMonth(month + 1).withDayOfMonth(dayOfMonth).toInstant();
             updateTime(alarm, newTime);
         }
     }
@@ -235,7 +250,7 @@ public class AlarmsFragment extends Fragment {
         ZonedDateTime curTimeLocal = curTime.atZone(TimeZone.getDefault().toZoneId());
         DatePickerDialog dialog = new DatePickerDialog(getContext(),
                 new DateModificationListener(alarm), curTimeLocal.getYear(),
-                curTimeLocal.getMonthValue(), curTimeLocal.getDayOfMonth());
+                curTimeLocal.getMonthValue() - 1, curTimeLocal.getDayOfMonth());
         dialog.show();
     }
 }

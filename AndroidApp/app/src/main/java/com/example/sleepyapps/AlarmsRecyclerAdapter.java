@@ -25,7 +25,6 @@ public class AlarmsRecyclerAdapter extends RecyclerView.Adapter<AlarmsRecyclerAd
     private static final long ONE_DAY_IN_MILLIS = 1000 * 60 * 60 * 24;
 
     private JSONArray data;
-    private Context myContext;
     private AlarmsFragment clickListener;
 
     public AlarmsRecyclerAdapter(JSONArray data,
@@ -37,8 +36,7 @@ public class AlarmsRecyclerAdapter extends RecyclerView.Adapter<AlarmsRecyclerAd
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        myContext = parent.getContext();
-        View view = LayoutInflater.from(myContext)
+        View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.alarms_recycler_item, parent,false);
 
         return new ViewHolder(view);
@@ -53,9 +51,10 @@ public class AlarmsRecyclerAdapter extends RecyclerView.Adapter<AlarmsRecyclerAd
             try {
                 long time = Instant.parse(timeString).toEpochMilli();
                 holder.timeView.setText(DateUtils.formatDateTime(
-                        myContext, time, DateUtils.FORMAT_SHOW_TIME));
+                        holder.timeView.getContext(), time, DateUtils.FORMAT_SHOW_TIME));
                 holder.dateView.setText(DateUtils.getRelativeDateTimeString(
-                        myContext, time, DateUtils.MINUTE_IN_MILLIS, ONE_DAY_IN_MILLIS,
+                        holder.dateView.getContext(), time, DateUtils.MINUTE_IN_MILLIS,
+                        ONE_DAY_IN_MILLIS,
                         DateUtils.FORMAT_SHOW_WEEKDAY | DateUtils.FORMAT_SHOW_DATE));
                 holder.timeView.setOnClickListener((View v) -> {
                     clickListener.onAlarmRecyclerItemTimeClick(alarm);
